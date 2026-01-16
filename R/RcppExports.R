@@ -2,46 +2,46 @@
 # Generator token: 10BE3573-1514-4C36-9D1C-5A225CD40393
 
 connected_components_undirected <- function(N, indices1, indptr1, indices2, indptr2) {
-    .Call(`_uwot_connected_components_undirected`, N, indices1, indptr1, indices2, indptr2)
+    .Call(`_uwotlite_connected_components_undirected`, N, indices1, indptr1, indices2, indptr2)
 }
 
 annoy_search_parallel_cpp <- function(index_name, mat, n_neighbors, search_k, metric, n_threads = 0L, grain_size = 1L) {
-    .Call(`_uwot_annoy_search_parallel_cpp`, index_name, mat, n_neighbors, search_k, metric, n_threads, grain_size)
+    .Call(`_uwotlite_annoy_search_parallel_cpp`, index_name, mat, n_neighbors, search_k, metric, n_threads, grain_size)
 }
 
 calc_row_probabilities_parallel <- function(nn_dist, n_vertices, perplexity, n_iter = 200L, tol = 1e-5, ret_sigma = FALSE, n_threads = 0L, grain_size = 1L) {
-    .Call(`_uwot_calc_row_probabilities_parallel`, nn_dist, n_vertices, perplexity, n_iter, tol, ret_sigma, n_threads, grain_size)
+    .Call(`_uwotlite_calc_row_probabilities_parallel`, nn_dist, n_vertices, perplexity, n_iter, tol, ret_sigma, n_threads, grain_size)
 }
 
 optimize_layout_r <- function(head_embedding, tail_embedding, positive_head, positive_tail, positive_ptr, n_epochs, n_head_vertices, n_tail_vertices, epochs_per_sample, method, method_args, initial_alpha, opt_args, epoch_callback, negative_sample_rate, rng_type = "tausworthe", batch = FALSE, n_threads = 0L, grain_size = 1L, move_other = TRUE, verbose = FALSE) {
-    .Call(`_uwot_optimize_layout_r`, head_embedding, tail_embedding, positive_head, positive_tail, positive_ptr, n_epochs, n_head_vertices, n_tail_vertices, epochs_per_sample, method, method_args, initial_alpha, opt_args, epoch_callback, negative_sample_rate, rng_type, batch, n_threads, grain_size, move_other, verbose)
+    .Call(`_uwotlite_optimize_layout_r`, head_embedding, tail_embedding, positive_head, positive_tail, positive_ptr, n_epochs, n_head_vertices, n_tail_vertices, epochs_per_sample, method, method_args, initial_alpha, opt_args, epoch_callback, negative_sample_rate, rng_type, batch, n_threads, grain_size, move_other, verbose)
 }
 
 smooth_knn_distances_parallel <- function(nn_dist, nn_ptr, skip_first, target, n_iter = 64L, local_connectivity = 1.0, tol = 1e-5, min_k_dist_scale = 1e-3, ret_sigma = FALSE, n_threads = 0L, grain_size = 1L) {
-    .Call(`_uwot_smooth_knn_distances_parallel`, nn_dist, nn_ptr, skip_first, target, n_iter, local_connectivity, tol, min_k_dist_scale, ret_sigma, n_threads, grain_size)
+    .Call(`_uwotlite_smooth_knn_distances_parallel`, nn_dist, nn_ptr, skip_first, target, n_iter, local_connectivity, tol, min_k_dist_scale, ret_sigma, n_threads, grain_size)
 }
 
 reset_local_metrics_parallel <- function(indptr, probabilities, n_iter = 32L, tol = 1e-5, num_local_metric_neighbors = 15.0, n_threads = 0L) {
-    .Call(`_uwot_reset_local_metrics_parallel`, indptr, probabilities, n_iter, tol, num_local_metric_neighbors, n_threads)
+    .Call(`_uwotlite_reset_local_metrics_parallel`, indptr, probabilities, n_iter, tol, num_local_metric_neighbors, n_threads)
 }
 
 fast_intersection_cpp <- function(rows, cols, values, target, unknown_dist = 1.0, far_dist = 5.0) {
-    .Call(`_uwot_fast_intersection_cpp`, rows, cols, values, target, unknown_dist, far_dist)
+    .Call(`_uwotlite_fast_intersection_cpp`, rows, cols, values, target, unknown_dist, far_dist)
 }
 
 general_sset_intersection_cpp <- function(indptr1, indices1, data1, indptr2, indices2, data2, result_row, result_col, result_val, mix_weight = 0.5) {
-    .Call(`_uwot_general_sset_intersection_cpp`, indptr1, indices1, data1, indptr2, indices2, data2, result_row, result_col, result_val, mix_weight)
+    .Call(`_uwotlite_general_sset_intersection_cpp`, indptr1, indices1, data1, indptr2, indices2, data2, result_row, result_col, result_val, mix_weight)
 }
 
 general_sset_union_cpp <- function(indptr1, indices1, data1, indptr2, indices2, data2, result_row, result_col, result_val) {
-    .Call(`_uwot_general_sset_union_cpp`, indptr1, indices1, data1, indptr2, indices2, data2, result_row, result_col, result_val)
+    .Call(`_uwotlite_general_sset_union_cpp`, indptr1, indices1, data1, indptr2, indices2, data2, result_row, result_col, result_val)
 }
 
 hardware_concurrency <- function() {
-    .Call(`_uwot_hardware_concurrency`)
+    .Call(`_uwotlite_hardware_concurrency`)
 }
 
 init_transform_parallel <- function(train_embedding, nn_index, n_test_vertices, nn_weights, n_threads = 0L, grain_size = 1L) {
-    .Call(`_uwot_init_transform_parallel`, train_embedding, nn_index, n_test_vertices, nn_weights, n_threads, grain_size)
+    .Call(`_uwotlite_init_transform_parallel`, train_embedding, nn_index, n_test_vertices, nn_weights, n_threads, grain_size)
 }
 

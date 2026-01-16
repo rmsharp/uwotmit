@@ -1,4 +1,4 @@
-library(uwot)
+library(uwotlite)
 library(RSpectra)
 context("Transform")
 
@@ -167,8 +167,8 @@ test_that("equivalent results with nn graph or sparse distance matrix", {
   iris_even <- iris[seq(2, 75, 2), ]
   iris_odd <- iris[seq(1, 25, 2), ]
 
-  iris_even_nn <- uwot:::annoy_nn(
-    X = uwot:::x2m(iris_even),
+  iris_even_nn <- uwotlite:::annoy_nn(
+    X = uwotlite:::x2m(iris_even),
     k = 10,
     metric = "euclidean",
     ret_index = TRUE
@@ -177,7 +177,7 @@ test_that("equivalent results with nn graph or sparse distance matrix", {
   row.names(iris_even_nn$dist) <- row.names(iris_even)
 
   iris_odd_nn <- annoy_search(
-    X = uwot:::x2m(iris_odd),
+    X = uwotlite:::x2m(iris_odd),
     k = 10,
     ann = iris_even_nn$index
   )
@@ -200,7 +200,7 @@ test_that("equivalent results with nn graph or sparse distance matrix", {
   expect_equal(row.names(iris_odd_transform_nn_graph), row.names(iris_odd))
 
   iris_odd_nn_sp <-
-    t(uwot:::nng_to_sparse(iris_odd_nn$idx, as.vector(iris_odd_nn$dist),
+    t(uwotlite:::nng_to_sparse(iris_odd_nn$idx, as.vector(iris_odd_nn$dist),
       self_nbr = FALSE,
       max_nbr_id = nrow(iris_even)
     ))

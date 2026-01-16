@@ -1,4 +1,4 @@
-library(uwot)
+library(uwotlite)
 library(RSpectra)
 context("Input validation")
 

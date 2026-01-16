@@ -1,4 +1,4 @@
-library(uwot)
+library(uwotlite)
 context("fuzzy simplicial set")
 
 ### Various fuzzy set matrices are defined in helper_fuzzy_sets.R

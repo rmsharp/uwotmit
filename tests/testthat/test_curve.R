@@ -1,4 +1,4 @@
-library(uwot)
+library(uwotlite)
 context("Curve Parameters")
 
 expect_equal(as.vector(find_ab_params(spread = 1, min_dist = 0.001)),

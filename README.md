@@ -68,7 +68,7 @@ devtools::install_github("jlmelville/uwot")
 ## Example
 
 ```R
-library(uwot)
+library(uwotlite)
 
 # umap2 is a version of the umap() function with better defaults
 iris_umap <- umap2(iris)
@@ -87,7 +87,7 @@ plot(
   cex = 0.1,
   col = grDevices::rainbow(n = length(levels(mnist$Label)))[as.integer(mnist$Label)] |>
     grDevices::adjustcolor(alpha.f = 0.1),
-  main = "R uwot::umap",
+  main = "R uwotlite::umap",
   xlab = "",
   ylab = ""
 )

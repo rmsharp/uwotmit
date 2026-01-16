@@ -1,4 +1,4 @@
 library(testthat)
-library(uwot)
+library(uwotlite)
 
 test_check("uwot")

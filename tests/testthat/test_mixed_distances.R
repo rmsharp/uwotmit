@@ -1,4 +1,4 @@
-library(uwot)
+library(uwotlite)
 context("mixed distance calculations")
 
 set.seed(1337)

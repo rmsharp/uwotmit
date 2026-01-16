@@ -74,7 +74,7 @@ mnist <- snedata::download_mnist()
 Now let's run `umap` and `umap2` on the MNIST data using their defaults.
 
 ```{r umap}
-library(uwot)
+library(uwotlite)
 
 set.seed(42)
 mnist_umap <- umap(mnist)
@@ -120,7 +120,7 @@ ggplot(
     scale_color_manual(values = palette) +
     theme_minimal() +
     labs(
-        title = "MNIST with uwot::umap",
+        title = "MNIST with uwotlite::umap",
         x = "",
         y = "",
         color = "Digit"
@@ -140,7 +140,7 @@ ggplot(
   scale_color_manual(values = palette) +
   theme_minimal() +
   labs(
-    title = "MNIST with uwot::umap2",
+    title = "MNIST with uwotlite::umap2",
     x = "",
     y = "",
     color = "Digit"

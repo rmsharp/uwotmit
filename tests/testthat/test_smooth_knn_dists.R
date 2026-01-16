@@ -1,4 +1,4 @@
-library(uwot)
+library(uwotlite)
 context("Smooth kNN distances")
 
 flatmat <- function(x, nr) {

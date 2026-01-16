@@ -1,4 +1,4 @@
-library(uwot)
+library(uwotlite)
 context("knn affinity")
 
 expected_sparse <- matrix(0, nrow = 10, ncol = 10)

@@ -1,4 +1,4 @@
-library(uwot)
+library(uwotlite)
 context("Random initialization")
 
 n_vertices <- 10
