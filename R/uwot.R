@@ -1,0 +1,5109 @@
+#' Dimensionality Reduction with UMAP
+#'
+#' Carry out dimensionality reduction of a dataset using the Uniform Manifold
+#' Approximation and Projection (UMAP) method (McInnes et al., 2018). Some of
+#' the following help text is lifted verbatim from the Python reference
+#' implementation at \url{https://github.com/lmcinnes/umap}.
+#'
+#' @param X Input data. Can be a \code{\link{data.frame}}, \code{\link{matrix}},
+#'   \code{\link[stats]{dist}} object or \code{\link[Matrix]{sparseMatrix}}.
+#'   Matrix and data frames should contain one observation per row. Data frames
+#'   will have any non-numeric columns removed, although factor columns will be
+#'   used if explicitly included via \code{metric} (see the help for
+#'   \code{metric} for details). A sparse matrix is interpreted as a distance
+#'   matrix, and is assumed to be symmetric, so you can also pass in an
+#'   explicitly upper or lower triangular sparse matrix to save storage. There
+#'   must be at least \code{n_neighbors} non-zero distances for each row. Both
+#'   implicit and explicit zero entries are ignored. Set zero distances you want
+#'   to keep to an arbitrarily small non-zero value (e.g. \code{1e-10}).
+#'   \code{X} can also be \code{NULL} if pre-computed nearest neighbor data is
+#'   passed to \code{nn_method}, and \code{init} is not \code{"spca"} or
+#'   \code{"pca"}.
+#' @param n_neighbors The size of local neighborhood (in terms of number of
+#'   neighboring sample points) used for manifold approximation. Larger values
+#'   result in more global views of the manifold, while smaller values result in
+#'   more local data being preserved. In general values should be in the range
+#'   \code{2} to \code{100}.
+#' @param n_components The dimension of the space to embed into. This defaults
+#'   to \code{2} to provide easy visualization, but can reasonably be set to any
+#'   integer value in the range \code{2} to \code{100}.
+#' @param metric Type of distance metric to use to find nearest neighbors. For
+#'  \code{nn_method = "annoy"} this can be one of:
+#' \itemize{
+#'   \item \code{"euclidean"} (the default)
+#'   \item \code{"cosine"}
+#'   \item \code{"manhattan"}
+#'   \item \code{"hamming"}
+#'   \item \code{"correlation"} (a distance based on the Pearson correlation)
+#'   \item \code{"categorical"} (see below)
+#' }
+#' For \code{nn_method = "hnsw"} this can be one of:
+#' \itemize{
+#'   \item \code{"euclidean"}
+#'   \item \code{"cosine"}
+#'   \item \code{"correlation"}
+#' }
+#' If \href{https://cran.r-project.org/package=rnndescent}{rnndescent} is
+#' installed and \code{nn_method = "nndescent"} is specified then many more
+#' metrics are avaiable, including:
+#' \itemize{
+#' \item \code{"braycurtis"}
+#' \item \code{"canberra"}
+#' \item \code{"chebyshev"}
+#' \item \code{"dice"}
+#' \item \code{"hamming"}
+#' \item \code{"hellinger"}
+#' \item \code{"jaccard"}
+#' \item \code{"jensenshannon"}
+#' \item \code{"kulsinski"}
+#' \item \code{"rogerstanimoto"}
+#' \item \code{"russellrao"}
+#' \item \code{"sokalmichener"}
+#' \item \code{"sokalsneath"}
+#' \item \code{"spearmanr"}
+#' \item \code{"symmetrickl"}
+#' \item \code{"tsss"}
+#' \item \code{"yule"}
+#' }
+#' For more details see the package documentation of \code{rnndescent}.
+#' For \code{nn_method = "fnn"}, the distance metric is always "euclidean".
+#'
+#' If \code{X} is a data frame or matrix, then multiple metrics can be
+#' specified, by passing a list to this argument, where the name of each item in
+#' the list is one of the metric names above. The value of each list item should
+#' be a vector giving the names or integer ids of the columns to be included in
+#' a calculation, e.g. \code{metric = list(euclidean = 1:4, manhattan = 5:10)}.
+#'
+#' Each metric calculation results in a separate fuzzy simplicial set, which are
+#' intersected together to produce the final set. Metric names can be repeated.
+#' Because non-numeric columns are removed from the data frame, it is safer to
+#' use column names than integer ids.
+#'
+#' Factor columns can also be used by specifying the metric name
+#' \code{"categorical"}. Factor columns are treated different from numeric
+#' columns and although multiple factor columns can be specified in a vector,
+#' each factor column specified is processed individually. If you specify
+#' a non-factor column, it will be coerced to a factor.
+#'
+#' For a given data block, you may override the \code{pca} and \code{pca_center}
+#' arguments for that block, by providing a list with one unnamed item
+#' containing the column names or ids, and then any of the \code{pca} or
+#' \code{pca_center} overrides as named items, e.g. \code{metric =
+#' list(euclidean = 1:4, manhattan = list(5:10, pca_center = FALSE))}. This
+#' exists to allow mixed binary and real-valued data to be included and to have
+#' PCA applied to both, but with centering applied only to the real-valued data
+#' (it is typical not to apply centering to binary data before PCA is applied).
+#' @param n_epochs Number of epochs to use during the optimization of the
+#'   embedded coordinates. By default, this value is set to \code{500} for
+#'   datasets containing 10,000 vertices or less, and \code{200} otherwise.
+#'   If \code{n_epochs = 0}, then coordinates determined by \code{"init"} will
+#'   be returned.
+#' @param scale Scaling to apply to \code{X} if it is a data frame or matrix:
+#' \itemize{
+#'   \item{\code{"none"} or \code{FALSE} or \code{NULL}} No scaling.
+#'   \item{\code{"Z"} or \code{"scale"} or \code{TRUE}} Scale each column to
+#'   zero mean and variance 1.
+#'   \item{\code{"maxabs"}} Center each column to mean 0, then divide each
+#'   element by the maximum absolute value over the entire matrix.
+#'   \item{\code{"range"}} Range scale the entire matrix, so the smallest
+#'   element is 0 and the largest is 1.
+#'   \item{\code{"colrange"}} Scale each column in the range (0,1).
+#' }
+#' For UMAP, the default is \code{"none"}.
+#' @param learning_rate Initial learning rate used in optimization of the
+#'   coordinates.
+#' @param init Type of initialization for the coordinates. Options are:
+#'   \itemize{
+#'     \item \code{"spectral"} Spectral embedding using the normalized Laplacian
+#'     of the fuzzy 1-skeleton, with Gaussian noise added.
+#'     \item \code{"normlaplacian"}. Spectral embedding using the normalized
+#'     Laplacian of the fuzzy 1-skeleton, without noise.
+#'     \item \code{"random"}. Coordinates assigned using a uniform random
+#'     distribution between -10 and 10.
+#'     \item \code{"lvrandom"}. Coordinates assigned using a Gaussian
+#'     distribution with standard deviation 1e-4, as used in LargeVis
+#'     (Tang et al., 2016) and t-SNE.
+#'     \item \code{"laplacian"}. Spectral embedding using the Laplacian Eigenmap
+#'     (Belkin and Niyogi, 2002).
+#'     \item \code{"pca"}. The first two principal components from PCA of
+#'     \code{X} if \code{X} is a data frame, and from a 2-dimensional classical
+#'     MDS if \code{X} is of class \code{"dist"}.
+#'     \item \code{"spca"}. Like \code{"pca"}, but each dimension is then scaled
+#'     so the standard deviation is 1e-4, to give a distribution similar to that
+#'     used in t-SNE. This is an alias for \code{init = "pca", init_sdev =
+#'     1e-4}.
+#'     \item \code{"agspectral"} An "approximate global" modification of
+#'     \code{"spectral"} which all edges in the graph to a value of 1, and then
+#'     sets a random number of edges (\code{negative_sample_rate} edges per
+#'     vertex) to 0.1, to approximate the effect of non-local affinities.
+#'     \item A matrix of initial coordinates.
+#'   }
+#'  For spectral initializations, (\code{"spectral"}, \code{"normlaplacian"},
+#'  \code{"laplacian"}, \code{"agspectral"}), if more than one connected
+#'  component is identified, no spectral initialization is attempted. Instead
+#'  a PCA-based initialization is attempted. If \code{verbose = TRUE} the
+#'  number of connected components are logged to the console. The existence of
+#'  multiple connected components implies that a global view of the data cannot
+#'  be attained with this initialization. Increasing the value of
+#'  \code{n_neighbors} may help.
+#' @param init_sdev If non-\code{NULL}, scales each dimension of the initialized
+#'   coordinates (including any user-supplied matrix) to this standard
+#'   deviation. By default no scaling is carried out, except when \code{init =
+#'   "spca"}, in which case the value is \code{0.0001}. Scaling the input may
+#'   help if the unscaled versions result in initial coordinates with large
+#'   inter-point distances or outliers. This usually results in small gradients
+#'   during optimization and very little progress being made to the layout.
+#'   Shrinking the initial embedding by rescaling can help under these
+#'   circumstances. Scaling the result of \code{init = "pca"} is usually
+#'   recommended and \code{init = "spca"} as an alias for \code{init = "pca",
+#'   init_sdev = 1e-4} but for the spectral initializations the scaled versions
+#'   usually aren't necessary unless you are using a large value of
+#'   \code{n_neighbors} (e.g. \code{n_neighbors = 150} or higher). For
+#'   compatibility with recent versions of the Python UMAP package, if you are
+#'   using \code{init = "spectral"}, then you should also set
+#'   \code{init_sdev = "range"}, which will range scale each of the columns
+#'   containing the initial data between 0-10. This is not set by default to
+#'   maintain backwards compatibility with previous versions of uwot.
+#' @param spread The effective scale of embedded points. In combination with
+#'   \code{min_dist}, this determines how clustered/clumped the embedded points
+#'   are.
+#' @param min_dist The effective minimum distance between embedded points.
+#'   Smaller values will result in a more clustered/clumped embedding where
+#'   nearby points on the manifold are drawn closer together, while larger
+#'   values will result on a more even dispersal of points. The value should be
+#'   set relative to the \code{spread} value, which determines the scale at
+#'   which embedded points will be spread out.
+#' @param set_op_mix_ratio Interpolate between (fuzzy) union and intersection as
+#'   the set operation used to combine local fuzzy simplicial sets to obtain a
+#'   global fuzzy simplicial sets. Both fuzzy set operations use the product
+#'   t-norm. The value of this parameter should be between \code{0.0} and
+#'   \code{1.0}; a value of \code{1.0} will use a pure fuzzy union, while
+#'   \code{0.0} will use a pure fuzzy intersection.
+#' @param local_connectivity The local connectivity required -- i.e. the number
+#'   of nearest neighbors that should be assumed to be connected at a local
+#'   level. The higher this value the more connected the manifold becomes
+#'   locally. In practice this should be not more than the local intrinsic
+#'   dimension of the manifold.
+#' @param bandwidth The effective bandwidth of the kernel if we view the
+#'   algorithm as similar to Laplacian Eigenmaps. Larger values induce more
+#'   connectivity and a more global view of the data, smaller values concentrate
+#'   more locally.
+#' @param repulsion_strength Weighting applied to negative samples in low
+#'   dimensional embedding optimization. Values higher than one will result in
+#'   greater weight being given to negative samples.
+#' @param negative_sample_rate The number of negative edge/1-simplex samples to
+#'   use per positive edge/1-simplex sample in optimizing the low dimensional
+#'   embedding.
+#' @param a More specific parameters controlling the embedding. If \code{NULL}
+#'   these values are set automatically as determined by \code{min_dist} and
+#'   \code{spread}.
+#' @param b More specific parameters controlling the embedding. If \code{NULL}
+#'   these values are set automatically as determined by \code{min_dist} and
+#'   \code{spread}.
+#' @param nn_method Method for finding nearest neighbors. Options are:
+#'   \itemize{
+#'     \item \code{"fnn"}. Use exact nearest neighbors via the
+#'       \href{https://cran.r-project.org/package=FNN}{FNN} package.
+#'     \item \code{"annoy"} Use approximate nearest neighbors via the
+#'       \href{https://cran.r-project.org/package=RcppAnnoy}{RcppAnnoy} package.
+#'     \item \code{"hnsw"} Use approximate nearest neighbors with the
+#'       Hierarchical Navigable Small World (HNSW) method (Malkov and Yashunin,
+#'       2018) via the
+#'       \href{https://cran.r-project.org/package=RcppHNSW}{RcppHNSW} package.
+#'       \code{RcppHNSW} is not a dependency of this package: this option is
+#'       only available if you have installed \code{RcppHNSW} yourself. Also,
+#'       HNSW only supports the following arguments for \code{metric} and
+#'       \code{target_metric}: \code{"euclidean"}, \code{"cosine"} and
+#'       \code{"correlation"}.
+#'     \item \code{"nndescent"} Use approximate nearest neighbors with the
+#'       Nearest Neighbor Descent method (Dong et al., 2011) via the
+#'       \href{https://cran.r-project.org/package=rnndescent}{rnndescent}
+#'       package. \code{rnndescent} is not a dependency of this package: this
+#'       option is only available if you have installed \code{rnndescent}
+#'       yourself.
+#'    }
+#'   By default, if \code{X} has less than 4,096 vertices, the exact nearest
+#'   neighbors are found. Otherwise, approximate nearest neighbors are used.
+#'   You may also pass pre-calculated nearest neighbor data to this argument. It
+#'   must be one of two formats, either a list consisting of two elements:
+#'   \itemize{
+#'     \item \code{"idx"} (or \code{"index"}). A \code{n_vertices x n_neighbors}
+#'     matrix containing the integer indexes of the nearest neighbors in
+#'     \code{X}.
+#'     \emph{Each vertex is considered to be its own nearest neighbor, i.e.
+#'     \code{idx[, 1] == 1:n_vertices}}.
+#'     \item \code{"dist"} (or \code{"distance"}). A
+#'     \code{n_vertices x n_neighbors} matrix containing the distances of the
+#'     nearest neighbors.
+#'   }
+#'   or a sparse distance matrix of type \code{dgCMatrix}, with dimensions
+#'   \code{n_vertices x n_vertices}. Distances should be arranged by column,
+#'   i.e. a non-zero entry in row \code{j} of the \code{i}th column indicates
+#'   that the \code{j}th observation in \code{X} is a nearest neighbor of the
+#'   \code{i}th observation with the distance given by the value of that
+#'   element.
+#'   The \code{n_neighbors} parameter is ignored when using precomputed
+#'   nearest neighbor data. If using the sparse distance matrix input, each
+#'   column can contain a different number of neighbors.
+#' @param n_trees Number of trees to build when constructing the nearest
+#'   neighbor index. The more trees specified, the larger the index, but the
+#'   better the results. With \code{search_k}, determines the accuracy of the
+#'   Annoy nearest neighbor search. Only used if the \code{nn_method} is
+#'   \code{"annoy"}. Sensible values are between \code{10} to \code{100}.
+#' @param search_k Number of nodes to search during the neighbor retrieval. The
+#'   larger k, the more the accurate results, but the longer the search takes.
+#'   With \code{n_trees}, determines the accuracy of the Annoy nearest neighbor
+#'   search. Only used if the \code{nn_method} is \code{"annoy"}.
+#' @param nn_args A list containing additional arguments to pass to the nearest
+#'   neighbor method. For \code{nn_method = "annoy"}, you can specify
+#'   \code{"n_trees"} and \code{"search_k"}, and these will override the
+#'   \code{n_trees} and \code{search_k} parameters.
+#'   For \code{nn_method = "hnsw"}, you may specify the following arguments:
+#'   \itemize{
+#'   \item \code{M} The maximum number of neighbors to keep for each vertex.
+#'   Reasonable values are \code{2} to \code{100}. Higher values give better
+#'   recall at the cost of more memory. Default value is \code{16}.
+#'   \item \code{ef_construction} A positive integer specifying the size of
+#'   the dynamic list used during index construction. A higher value will
+#'   provide better results at the cost of a longer time to build the index.
+#'   Default is \code{200}.
+#'   \item \code{ef} A positive integer specifying the size of the dynamic
+#'   list used during search. This cannot be smaller than \code{n_neighbors}
+#'   and cannot be higher than the number of items in the index. Default is
+#'   \code{10}.
+#'   }
+#'   For \code{nn_method = "nndescent"}, you may specify the following
+#'   arguments:
+#'   \itemize{
+#'   \item \code{n_trees} The number of trees to use in a random projection
+#'   forest to initialize the search. A larger number will give more accurate
+#'   results at the cost of a longer computation time. The default of
+#'   \code{NULL} means that the number is chosen based on the number of
+#'   observations in \code{X}.
+#'   \item \code{max_candidates} The number of potential neighbors to explore
+#'   per iteration. By default, this is set to \code{n_neighbors} or \code{60},
+#'   whichever is smaller. A larger number will give more accurate results at
+#'   the cost of a longer computation time.
+#'   \item \code{n_iters} The number of iterations to run the search. A larger
+#'   number will give more accurate results at the cost of a longer computation
+#'   time. By default, this will be chosen based on the number of observations
+#'   in \code{X}. You may also need to modify the convergence criterion
+#'   \code{delta}.
+#'   \item \code{delta} The minimum relative change in the neighbor graph
+#'   allowed before early stopping. Should be a value between 0 and 1. The
+#'   smaller the value, the smaller the amount of progress between iterations is
+#'   allowed. Default value of \code{0.001} means that at least 0.1% of the
+#'   neighbor graph must be updated at each iteration.
+#'   \item \code{init} How to initialize the nearest neighbor descent. By
+#'   default this is set to \code{"tree"} and uses a random project forest.
+#'   If you set this to \code{"rand"}, then a random selection is used. Usually
+#'   this is less accurate than using RP trees, but for high-dimensional cases,
+#'   there may be little difference in the quality of the initialization and
+#'   random initialization will be a lot faster. If you set this to
+#'   \code{"rand"}, then the \code{n_trees} parameter is ignored.
+#'   \item \code{pruning_degree_multiplier} The maximum number of edges per node
+#'   to retain in the search graph, relative to \code{n_neighbors}. A larger
+#'   value will give more accurate results at the cost of a longer computation
+#'   time. Default is \code{1.5}. This parameter only affects neighbor search
+#'   when transforming new data with \code{\link{umap_transform}}.
+#'   \item \code{epsilon} Controls the degree of the back-tracking when
+#'   traversing the search graph. Setting this to \code{0.0} will do a greedy
+#'   search with no back-tracking. A larger value will give more accurate
+#'   results at the cost of a longer computation time. Default is \code{0.1}.
+#'   This parameter only affects neighbor search when transforming new data with
+#'   \code{\link{umap_transform}}.
+#'   \item \code{max_search_fraction} Specifies the maximum fraction of the
+#'   search graph to traverse. By default, this is set to \code{1.0}, so the
+#'   entire graph (i.e. all items in \code{X}) may be visited. You may want to
+#'   set this to a smaller value if you have a very large dataset (in
+#'   conjunction with \code{epsilon}) to avoid an inefficient exhaustive search
+#'   of the data in \code{X}. This parameter only affects neighbor search when
+#'   transforming new data with \code{\link{umap_transform}}.
+#'   }
+#' @param approx_pow If \code{TRUE}, use an approximation to the power function
+#'   in the UMAP gradient, from
+#'   \url{https://martin.ankerl.com/2012/01/25/optimized-approximative-pow-in-c-and-cpp/}.
+#'   Ignored if \code{dens_scale} is non-\code{NULL}.
+#' @param y Optional target data for supervised dimension reduction. Can be a
+#' vector, matrix or data frame. Use the \code{target_metric} parameter to
+#' specify the metrics to use, using the same syntax as \code{metric}. Usually
+#' either a single numeric or factor column is used, but more complex formats
+#' are possible. The following types are allowed:
+#'   \itemize{
+#'     \item Factor columns with the same length as \code{X}. \code{NA} is
+#'     allowed for any observation with an unknown level, in which case
+#'     UMAP operates as a form of semi-supervised learning. Each column is
+#'     treated separately.
+#'     \item Numeric data. \code{NA} is \emph{not} allowed in this case. Use the
+#'     parameter \code{target_n_neighbors} to set the number of neighbors used
+#'     with \code{y}. If unset, \code{n_neighbors} is used. Unlike factors,
+#'     numeric columns are grouped into one block unless \code{target_metric}
+#'     specifies otherwise. For example, if you wish columns \code{a} and
+#'     \code{b} to be treated separately, specify
+#'     \code{target_metric = list(euclidean = "a", euclidean = "b")}. Otherwise,
+#'     the data will be effectively treated as a matrix with two columns.
+#'     \item Nearest neighbor data, consisting of a list of two matrices,
+#'     \code{idx} and \code{dist}. These represent the precalculated nearest
+#'     neighbor indices and distances, respectively. This
+#'     is the same format as that expected for precalculated data in
+#'     \code{nn_method}. This format assumes that the underlying data was a
+#'     numeric vector. Any user-supplied value of the \code{target_n_neighbors}
+#'     parameter is ignored in this case, because the the number of columns in
+#'     the matrices is used for the value. Multiple nearest neighbor data using
+#'     different metrics can be supplied by passing a list of these lists.
+#'   }
+#' Unlike \code{X}, all factor columns included in \code{y} are automatically
+#' used.
+#' @param target_n_neighbors Number of nearest neighbors to use to construct the
+#'   target simplicial set. Default value is \code{n_neighbors}. Applies only if
+#'   \code{y} is non-\code{NULL} and \code{numeric}.
+#' @param target_metric The metric used to measure distance for \code{y} if
+#'   using supervised dimension reduction. Used only if \code{y} is numeric.
+#' @param target_weight Weighting factor between data topology and target
+#'   topology. A value of 0.0 weights entirely on data, a value of 1.0 weights
+#'   entirely on target. The default of 0.5 balances the weighting equally
+#'   between data and target. Only applies if \code{y} is non-\code{NULL}.
+#' @param pca If set to a positive integer value, reduce data to this number of
+#'   columns using PCA. Doesn't applied if the distance \code{metric} is
+#'   \code{"hamming"}, or the dimensions of the data is larger than the
+#'   number specified (i.e. number of rows and columns must be larger than the
+#'   value of this parameter). If you have > 100 columns in a data frame or
+#'   matrix, reducing the number of columns in this way may substantially
+#'   increase the performance of the nearest neighbor search at the cost of a
+#'   potential decrease in accuracy. In many t-SNE applications, a value of 50
+#'   is recommended, although there's no guarantee that this is appropriate for
+#'   all settings.
+#' @param pca_center If \code{TRUE}, center the columns of \code{X} before
+#'   carrying out PCA. For binary data, it's recommended to set this to
+#'   \code{FALSE}.
+#' @param pca_method Method to carry out any PCA dimensionality reduction when
+#'   the \code{pca} parameter is specified. Allowed values are:
+#'   \itemize{
+#'     \item{\code{"irlba"}}. Uses \code{\link[irlba]{prcomp_irlba}} from the
+#'     \href{https://cran.r-project.org/package=irlba}{irlba} package.
+#'     \item{\code{"rsvd"}}. Uses 5 iterations of \code{\link[irlba]{svdr}} from
+#'     the \href{https://cran.r-project.org/package=irlba}{irlba} package.
+#'     This is likely to give much faster but potentially less accurate results
+#'     than using \code{"irlba"}. For the purposes of nearest neighbor
+#'     calculation and coordinates initialization, any loss of accuracy doesn't
+#'     seem to matter much.
+#'     \item{\code{"bigstatsr"}}. Uses \code{\link[bigstatsr]{big_randomSVD}}
+#'     from the \href{https://cran.r-project.org/package=bigstatsr}{bigstatsr}
+#'     package. The SVD methods used in \code{bigstatsr} may be faster on
+#'     systems without access to efficient linear algebra libraries (e.g.
+#'     Windows). \strong{Note}: \code{bigstatsr} is \emph{not} a dependency of
+#'     uwot: if you choose to use this package for PCA, you \emph{must} install
+#'     it yourself.
+#'     \item{\code{"svd"}}. Uses \code{\link[base]{svd}} for the SVD. This is
+#'     likely to be slow for all but the smallest datasets.
+#'     \item{\code{"auto"}} (the default). Uses \code{"irlba"}, unless more than
+#'     50% of the full set of singular vectors would be calculated, in which
+#'     case \code{"svd"} is used.
+#'   }
+#' @param pcg_rand If \code{TRUE}, use the PCG random number generator (O'Neill,
+#'   2014) during optimization. Otherwise, use the faster (but probably less
+#'   statistically good) Tausworthe "taus88" generator. The default is
+#'   \code{TRUE}. This parameter has been superseded by \code{rng_type} -- if
+#'   both are set, \code{rng_type} takes precedence.
+#' @param rng_type The type of random number generator to use during
+#'   optimization. One of:
+#'   \itemize{
+#'    \item{\code{"pcg"}}. Use the PCG random number generator (O'Neill, 2014).
+#'    \item{\code{"tausworthe"}}. Use the Tausworthe "taus88" generator.
+#'    \item{\code{"deterministic"}}. Use a deterministic number generator. This
+#'    isn't actually random, but may provide enough variation in the negative
+#'    sampling to give a good embedding and can provide a noticeable speed-up.
+#'   }
+#'   For backwards compatibility, by default this is unset and the choice of
+#'   \code{pcg_rand} is used (making "pcg" the effective default).
+#' @param fast_sgd If \code{TRUE}, then the following combination of parameters
+#'   is set: \code{pcg_rand = TRUE}, \code{n_sgd_threads = "auto"} and
+#'   \code{approx_pow = TRUE}. The default is \code{FALSE}. Setting this to
+#'   \code{TRUE} will speed up the stochastic optimization phase, but give a
+#'   potentially less accurate embedding, and which will not be exactly
+#'   reproducible even with a fixed seed. For visualization, \code{fast_sgd =
+#'   TRUE} will give perfectly good results. For more generic dimensionality
+#'   reduction, it's safer to leave \code{fast_sgd = FALSE}. If \code{fast_sgd =
+#'   TRUE}, then user-supplied values of \code{pcg_rand}, \code{n_sgd_threads},
+#'   and \code{approx_pow} are ignored.
+#' @param batch If \code{TRUE}, then embedding coordinates are updated at the
+#'   end of each epoch rather than during the epoch. In batch mode, results are
+#'   reproducible with a fixed random seed even with \code{n_sgd_threads > 1},
+#'   at the cost of a slightly higher memory use. You may also have to modify
+#'   \code{learning_rate} and increase \code{n_epochs}, so whether this provides
+#'   a speed increase over the single-threaded optimization is likely to be
+#'   dataset and hardware-dependent.
+#' @param ret_model If \code{TRUE}, then return extra data that can be used to
+#'   add new data to an existing embedding via \code{\link{umap_transform}}. The
+#'   embedded coordinates are returned as the list item \code{embedding}. If
+#'   \code{FALSE}, just return the coordinates. This parameter can be used in
+#'   conjunction with \code{ret_nn} and \code{ret_extra}. Note that some
+#'   settings are incompatible with the production of a UMAP model: external
+#'   neighbor data (passed via a list to \code{nn_method}), and factor columns
+#'   that were included via the \code{metric} parameter. In the latter case, the
+#'   model produced is based only on the numeric data. A transformation using
+#'   new data is possible, but the factor columns in the new data are ignored.
+#'   Note that setting \code{ret_model = TRUE} forces the use of the approximate
+#'   nearest neighbors method. Because small datasets would otherwise use exact
+#'   nearest neighbor calculations, setting \code{ret_model = TRUE} means that
+#'   different results may be returned for small datasets in terms of both the
+#'   returned nearest neighbors (if requested) and the final embedded
+#'   coordinates, compared to \code{ret_model = FALSE}, even if the random
+#'   number seed is fixed. To avoid this, explicitly set
+#'   \code{nn_method = "annoy"} in the \code{ret_model = FALSE} case.
+#' @param ret_nn If \code{TRUE}, then in addition to the embedding, also return
+#'   nearest neighbor data that can be used as input to \code{nn_method} to
+#'   avoid the overhead of repeatedly calculating the nearest neighbors when
+#'   manipulating unrelated parameters (e.g. \code{min_dist}, \code{n_epochs},
+#'   \code{init}). See the "Value" section for the names of the list items. If
+#'   \code{FALSE}, just return the coordinates. Note that the nearest neighbors
+#'   could be sensitive to data scaling, so be wary of reusing nearest neighbor
+#'   data if modifying the \code{scale} parameter. This parameter can be used in
+#'   conjunction with \code{ret_model} and \code{ret_extra}.
+#' @param ret_extra A vector indicating what extra data to return. May contain
+#'   any combination of the following strings:
+#'   \itemize{
+#'     \item \code{"model"} Same as setting \code{ret_model = TRUE}.
+#'     \item \code{"nn"} Same as setting \code{ret_nn = TRUE}.
+#'     \item \code{"fgraph"} the high dimensional fuzzy graph (i.e. the fuzzy
+#'       simplicial set of the merged local views of the input data). The graph
+#'       is returned as a sparse symmetric N x N matrix of class
+#'       \link[Matrix]{dgCMatrix-class}, where a non-zero entry (i, j) gives the
+#'       membership strength of the edge connecting vertex i and vertex j. This
+#'       can be considered analogous to the input probability (or similarity or
+#'       affinity) used in t-SNE and LargeVis. Note that the graph is further
+#'       sparsified by removing edges with sufficiently low membership strength
+#'       that they would not be sampled by the probabilistic edge sampling
+#'       employed for optimization and therefore the number of non-zero elements
+#'       in the matrix is dependent on \code{n_epochs}. If you are only
+#'       interested in the fuzzy input graph (e.g. for clustering), setting
+#'       \code{n_epochs = 0} will avoid any further sparsifying.
+#'       Be aware that setting `binary_edge_weights = TRUE` will affect this
+#'       graph (all non-zero edge weights will be 1).
+#'    \item \code{"sigma"} the normalization value for each observation in the
+#'       dataset when constructing the smoothed distances to each of its
+#'       neighbors. This gives some sense of the local density of each
+#'       observation in the high dimensional space: higher values of
+#'       \code{sigma} indicate a higher dispersion or lower density.
+#'   }
+#' @param n_threads Number of threads to use (except during stochastic gradient
+#'   descent). Default is half the number of concurrent threads supported by the
+#'   system. For nearest neighbor search, this controls the search phase. For
+#'   \code{nn_method = "annoy"}, if \code{n_threads > 1}, then the Annoy index
+#'   will be temporarily written to disk in the location determined by
+#'   \code{\link[base]{tempfile}}.
+#' @param n_build_threads Number of threads to use when building nearest
+#'   neighbor indexes. Default is \code{NULL}, which uses \code{n_threads}. To
+#'   improve determinism, use \code{n_build_threads = 1}. Only
+#'   applies for \code{nn_method = "hnsw"} or \code{nn_method = "nndescent"}.
+#'   The Annoy-based index always use a single thread.
+#' @param n_sgd_threads Number of threads to use during stochastic gradient
+#'   descent. If set to > 1, then be aware that if \code{batch = FALSE}, results
+#'   will \emph{not} be reproducible, even if \code{set.seed} is called with a
+#'   fixed seed before running. Set to \code{"auto"} to use the same value as
+#'   \code{n_threads}.
+#' @param grain_size The minimum amount of work to do on each thread. If this
+#'   value is set high enough, then less than \code{n_threads} or
+#'   \code{n_sgd_threads} will be used for processing, which might give a
+#'   performance improvement if the overhead of thread management and context
+#'   switching was outweighing the improvement due to concurrent processing.
+#'   This should be left at default (\code{1}) and work will be spread evenly
+#'   over all the threads specified.
+#' @param tmpdir Temporary directory to store nearest neighbor indexes during
+#'   nearest neighbor search. Default is \code{\link{tempdir}}. The index is
+#'   only written to disk if \code{n_threads > 1} and
+#'   \code{nn_method = "annoy"}; otherwise, this parameter is ignored.
+#' @param verbose If \code{TRUE}, log details to the console.
+#' @param opt_args A list of optimizer parameters, used when
+#'   \code{batch = TRUE}. The default optimization method used is Adam (Kingma
+#'   and Ba, 2014).
+#'   \itemize{
+#'     \item \code{method} The optimization method to use. Either \code{"adam"}
+#'     or \code{"sgd"} (stochastic gradient descent). Default: \code{"adam"}.
+#'     \item \code{beta1} (Adam only). The weighting parameter for the
+#'     exponential moving average of the first moment estimator. Effectively the
+#'     momentum parameter. Should be a floating point value between 0 and 1.
+#'     Higher values can smooth oscillatory updates in poorly-conditioned
+#'     situations and may allow for a larger \code{learning_rate} to be
+#'     specified, but too high can cause divergence. Default: \code{0.5}.
+#'     \item \code{beta2} (Adam only). The weighting parameter for the
+#'     exponential moving average of the uncentered second moment estimator.
+#'     Should be a floating point value between 0 and 1. Controls the degree of
+#'     adaptivity in the step-size. Higher values put more weight on previous
+#'     time steps. Default: \code{0.9}.
+#'     \item \code{eps} (Adam only). Intended to be a small value to prevent
+#'     division by zero, but in practice can also affect convergence due to its
+#'     interaction with \code{beta2}. Higher values reduce the effect of the
+#'     step-size adaptivity and bring the behavior closer to stochastic gradient
+#'     descent with momentum. Typical values are between 1e-8 and 1e-3. Default:
+#'     \code{1e-7}.
+#'     \item \code{alpha} The initial learning rate. Default: the value of the
+#'     \code{learning_rate} parameter.
+#'   }
+#' @param epoch_callback A function which will be invoked at the end of every
+#'   epoch. Its signature should be: \code{(epoch, n_epochs, coords)}, where:
+#'   \itemize{
+#'     \item \code{epoch} The current epoch number (between \code{1} and
+#'     \code{n_epochs}).
+#'     \item \code{n_epochs} Number of epochs to use during the optimization of
+#'     the embedded coordinates.
+#'     \item \code{coords} The embedded coordinates as of the end of the current
+#'     epoch, as a matrix with dimensions (N, \code{n_components}).
+#'   }
+#' @param binary_edge_weights If \code{TRUE} then edge weights in the input
+#'   graph are treated as binary (0/1) rather than real valued. This affects the
+#'   sampling frequency of neighbors and is the strategy used by the PaCMAP
+#'   method (Wang and co-workers, 2020). Practical (Böhm and co-workers, 2020)
+#'   and theoretical (Damrich and Hamprecht, 2021) work suggests this has little
+#'   effect on UMAP's performance.
+#' @param dens_scale A value between 0 and 1. If > 0 then the output attempts
+#'   to preserve relative local density around each observation. This uses an
+#'   approximation to the densMAP method (Narayan and co-workers, 2021). The
+#'   larger the value of \code{dens_scale}, the greater the range of output
+#'   densities that will be used to map the input densities. This option is
+#'   ignored if using multiple \code{metric} blocks.
+#' @param seed Integer seed to use to initialize the random number generator
+#'   state. Combined with \code{n_sgd_threads = 1} or \code{batch = TRUE}, this
+#'   should give consistent output across multiple runs on a given installation.
+#'   Setting this value is equivalent to calling \code{\link[base]{set.seed}},
+#'   but it may be more convenient in some situations than having to call a
+#'   separate function. The default is to not set a seed. If
+#'   \code{ret_model = TRUE}, the seed will be stored in the output model and
+#'   then used to set the seed inside \code{\link{umap_transform}}.
+#' @return A matrix of optimized coordinates, or:
+#'   \itemize{
+#'     \item if \code{ret_model = TRUE} (or \code{ret_extra} contains
+#'     \code{"model"}), returns a list containing extra information that can be
+#'     used to add new data to an existing embedding via
+#'     \code{\link{umap_transform}}. In this case, the coordinates are available
+#'     in the list item \code{embedding}. \bold{NOTE}: The contents of
+#'     the \code{model} list should \emph{not} be considered stable or part of
+#'     the public API, and are purposely left undocumented.
+#'     \item if \code{ret_nn = TRUE} (or \code{ret_extra} contains \code{"nn"}),
+#'     returns the nearest neighbor data as a list called \code{nn}. This
+#'     contains one list for each \code{metric} calculated, itself containing a
+#'     matrix \code{idx} with the integer ids of the neighbors; and a matrix
+#'     \code{dist} with the distances. The \code{nn} list (or a sub-list) can be
+#'     used as input to the \code{nn_method} parameter.
+#'     \item if \code{ret_extra} contains \code{"fgraph"}, returns the high
+#'     dimensional fuzzy graph as a sparse matrix called \code{fgraph}, of type
+#'     \link[Matrix]{dgCMatrix-class}.
+#'     \item if \code{ret_extra} contains \code{"sigma"}, returns a vector of the
+#'     smooth knn distance normalization terms for each observation as
+#'     \code{"sigma"} and a vector \code{"rho"} containing the largest
+#'     distance to the locally connected neighbors of each observation.
+#'     \item if \code{ret_extra} contains \code{"localr"}, returns a vector of
+#'     the estimated local radii, the sum of \code{"sigma"} and \code{"rho"}.
+#'   }
+#'   The returned list contains the combined data from any combination of
+#'   specifying \code{ret_model}, \code{ret_nn} and \code{ret_extra}.
+#' @examples
+#'
+#' iris30 <- iris[c(1:10, 51:60, 101:110), ]
+#'
+#' # Non-numeric columns are automatically removed so you can pass data frames
+#' # directly in a lot of cases without pre-processing
+#' iris_umap <- umap(iris30, n_neighbors = 5, learning_rate = 0.5, init = "random", n_epochs = 20)
+#'
+#' # Faster approximation to the gradient and return nearest neighbors
+#' iris_umap <- umap(iris30, n_neighbors = 5, approx_pow = TRUE, ret_nn = TRUE, n_epochs = 20)
+#'
+#' # Can specify min_dist and spread parameters to control separation and size
+#' # of clusters and reuse nearest neighbors for efficiency
+#' nn <- iris_umap$nn
+#' iris_umap <- umap(iris30, n_neighbors = 5, min_dist = 1, spread = 5, nn_method = nn, n_epochs = 20)
+#'
+#' # Supervised dimension reduction using the 'Species' factor column
+#' iris_sumap <- umap(iris30,
+#'   n_neighbors = 5, min_dist = 0.001, y = iris30$Species,
+#'   target_weight = 0.5, n_epochs = 20
+#' )
+#'
+#' # Calculate Petal and Sepal neighbors separately (uses intersection of the resulting sets):
+#' iris_umap <- umap(iris30, metric = list(
+#'   "euclidean" = c("Sepal.Length", "Sepal.Width"),
+#'   "euclidean" = c("Petal.Length", "Petal.Width")
+#' ))
+#'
+#' @references
+#' Belkin, M., & Niyogi, P. (2002).
+#' Laplacian eigenmaps and spectral techniques for embedding and clustering.
+#' In \emph{Advances in neural information processing systems}
+#' (pp. 585-591).
+#' \url{http://papers.nips.cc/paper/1961-laplacian-eigenmaps-and-spectral-techniques-for-embedding-and-clustering.pdf}
+#'
+#' Böhm, J. N., Berens, P., & Kobak, D. (2020).
+#' A unifying perspective on neighbor embeddings along the attraction-repulsion spectrum.
+#' \emph{arXiv preprint} \emph{arXiv:2007.08902}.
+#' \url{https://arxiv.org/abs/2007.08902}
+#'
+#' Damrich, S., & Hamprecht, F. A. (2021).
+#' On UMAP's true loss function.
+#' \emph{Advances in Neural Information Processing Systems}, \emph{34}.
+#' \url{https://proceedings.neurips.cc/paper/2021/hash/2de5d16682c3c35007e4e92982f1a2ba-Abstract.html}
+#'
+#' Dong, W., Moses, C., & Li, K. (2011, March).
+#' Efficient k-nearest neighbor graph construction for generic similarity measures.
+#' In \emph{Proceedings of the 20th international conference on World Wide Web}
+#' (pp. 577-586).
+#' ACM.
+#' \doi{10.1145/1963405.1963487}.
+#'
+#' Kingma, D. P., & Ba, J. (2014).
+#' Adam: A method for stochastic optimization.
+#' \emph{arXiv preprint} \emph{arXiv}:1412.6980.
+#' \url{https://arxiv.org/abs/1412.6980}
+#'
+#' Malkov, Y. A., & Yashunin, D. A. (2018).
+#' Efficient and robust approximate nearest neighbor search using hierarchical
+#' navigable small world graphs.
+#' \emph{IEEE transactions on pattern analysis and machine intelligence}, \emph{42}(4), 824-836.
+#'
+#' McInnes, L., Healy, J., & Melville, J. (2018).
+#' UMAP: Uniform Manifold Approximation and Projection for Dimension Reduction
+#' \emph{arXiv preprint} \emph{arXiv}:1802.03426.
+#' \url{https://arxiv.org/abs/1802.03426}
+#'
+#' Narayan, A., Berger, B., & Cho, H. (2021).
+#' Assessing single-cell transcriptomic variability through density-preserving data visualization.
+#' \emph{Nature biotechnology}, \emph{39}(6), 765-774.
+#' \doi{10.1038/s41587-020-00801-7}
+#'
+#' O'Neill, M. E. (2014).
+#' \emph{PCG: A family of simple fast space-efficient statistically good
+#' algorithms for random number generation}
+#' (Report No. HMC-CS-2014-0905). Harvey Mudd College.
+#'
+#' Tang, J., Liu, J., Zhang, M., & Mei, Q. (2016, April).
+#' Visualizing large-scale and high-dimensional data.
+#' In \emph{Proceedings of the 25th International Conference on World Wide Web}
+#' (pp. 287-297).
+#' International World Wide Web Conferences Steering Committee.
+#' \url{https://arxiv.org/abs/1602.00370}
+#'
+#' Van der Maaten, L., & Hinton, G. (2008).
+#' Visualizing data using t-SNE.
+#' \emph{Journal of Machine Learning Research}, \emph{9} (2579-2605).
+#' \url{https://www.jmlr.org/papers/v9/vandermaaten08a.html}
+#'
+#' Wang, Y., Huang, H., Rudin, C., & Shaposhnik, Y. (2021).
+#' Understanding How Dimension Reduction Tools Work: An Empirical Approach to Deciphering t-SNE, UMAP, TriMap, and PaCMAP for Data Visualization.
+#' \emph{Journal of Machine Learning Research}, \emph{22}(201), 1-73.
+#' \url{https://www.jmlr.org/papers/v22/20-1061.html}
+#'
+#' @export
+umap <- function(X, n_neighbors = 15, n_components = 2, metric = "euclidean",
+                 n_epochs = NULL, learning_rate = 1, scale = FALSE,
+                 init = "spectral", init_sdev = NULL,
+                 spread = 1, min_dist = 0.01,
+                 set_op_mix_ratio = 1.0, local_connectivity = 1.0,
+                 bandwidth = 1.0, repulsion_strength = 1.0,
+                 negative_sample_rate = 5.0, a = NULL, b = NULL,
+                 nn_method = NULL, n_trees = 50,
+                 search_k = 2 * n_neighbors * n_trees,
+                 approx_pow = FALSE,
+                 y = NULL, target_n_neighbors = n_neighbors,
+                 target_metric = "euclidean",
+                 target_weight = 0.5,
+                 pca = NULL, pca_center = TRUE,
+                 pcg_rand = TRUE,
+                 fast_sgd = FALSE,
+                 ret_model = FALSE, ret_nn = FALSE, ret_extra = c(),
+                 n_threads = NULL,
+                 n_build_threads = NULL,
+                 n_sgd_threads = 0,
+                 grain_size = 1,
+                 tmpdir = tempdir(),
+                 verbose = getOption("verbose", TRUE),
+                 batch = FALSE,
+                 opt_args = NULL, epoch_callback = NULL, pca_method = NULL,
+                 binary_edge_weights = FALSE,
+                 dens_scale = NULL,
+                 seed = NULL,
+                 nn_args = list(),
+                 rng_type = NULL) {
+  uwot(
+    X = X, n_neighbors = n_neighbors, n_components = n_components,
+    metric = metric, n_epochs = n_epochs, alpha = learning_rate, scale = scale,
+    init = init, init_sdev = init_sdev,
+    spread = spread, min_dist = min_dist,
+    set_op_mix_ratio = set_op_mix_ratio,
+    local_connectivity = local_connectivity, bandwidth = bandwidth,
+    gamma = repulsion_strength, negative_sample_rate = negative_sample_rate,
+    a = a, b = b, nn_method = nn_method, n_trees = n_trees,
+    search_k = search_k,
+    method = "umap", approx_pow = approx_pow,
+    n_threads = n_threads, n_build_threads = n_build_threads,
+    n_sgd_threads = n_sgd_threads,
+    grain_size = grain_size,
+    y = y, target_n_neighbors = target_n_neighbors,
+    target_weight = target_weight, target_metric = target_metric,
+    pca = pca, pca_center = pca_center, pca_method = pca_method,
+    pcg_rand = pcg_rand,
+    fast_sgd = fast_sgd,
+    ret_model = ret_model || "model" %in% ret_extra,
+    ret_nn = ret_nn || "nn" %in% ret_extra,
+    ret_fgraph = "fgraph" %in% ret_extra,
+    ret_sigma = "sigma" %in% ret_extra,
+    ret_localr = "localr" %in% ret_extra,
+    batch = batch,
+    opt_args = opt_args,
+    epoch_callback = epoch_callback,
+    binary_edge_weights = binary_edge_weights,
+    tmpdir = tempdir(),
+    verbose = verbose,
+    dens_scale = dens_scale,
+    seed = seed,
+    nn_args = nn_args,
+    rng_type = rng_type
+  )
+}
+
+#' Dimensionality Reduction Using t-Distributed UMAP (t-UMAP)
+#'
+#' A faster (but less flexible) version of the UMAP (McInnes et al, 2018)
+#' gradient. For more detail on UMAP, see the \code{\link{umap}} function.
+#'
+#' By setting the UMAP curve parameters \code{a} and \code{b} to \code{1}, you
+#' get back the Cauchy distribution as used in t-SNE (van der Maaten and Hinton,
+#' 2008) and LargeVis (Tang et al., 2016). It also results in a substantially
+#' simplified gradient expression. This can give a speed improvement of around
+#' 50\%.
+#'
+#' @param X Input data. Can be a \code{\link{data.frame}}, \code{\link{matrix}},
+#'   \code{\link[stats]{dist}} object or \code{\link[Matrix]{sparseMatrix}}.
+#'   Matrix and data frames should contain one observation per row. Data frames
+#'   will have any non-numeric columns removed, although factor columns will be
+#'   used if explicitly included via \code{metric} (see the help for
+#'   \code{metric} for details). A sparse matrix is interpreted as a distance
+#'   matrix, and is assumed to be symmetric, so you can also pass in an
+#'   explicitly upper or lower triangular sparse matrix to save storage. There
+#'   must be at least \code{n_neighbors} non-zero distances for each row. Both
+#'   implicit and explicit zero entries are ignored. Set zero distances you want
+#'   to keep to an arbitrarily small non-zero value (e.g. \code{1e-10}).
+#'   \code{X} can also be \code{NULL} if pre-computed nearest neighbor data is
+#'   passed to \code{nn_method}, and \code{init} is not \code{"spca"} or
+#'   \code{"pca"}.
+#' @param n_neighbors The size of local neighborhood (in terms of number of
+#'   neighboring sample points) used for manifold approximation. Larger values
+#'   result in more global views of the manifold, while smaller values result in
+#'   more local data being preserved. In general values should be in the range
+#'   \code{2} to \code{100}.
+#' @param n_components The dimension of the space to embed into. This defaults
+#'   to \code{2} to provide easy visualization, but can reasonably be set to any
+#'   integer value in the range \code{2} to \code{100}.
+#' @param metric Type of distance metric to use to find nearest neighbors. For
+#'  \code{nn_method = "annoy"} this can be one of:
+#' \itemize{
+#'   \item \code{"euclidean"} (the default)
+#'   \item \code{"cosine"}
+#'   \item \code{"manhattan"}
+#'   \item \code{"hamming"}
+#'   \item \code{"correlation"} (a distance based on the Pearson correlation)
+#'   \item \code{"categorical"} (see below)
+#' }
+#' For \code{nn_method = "hnsw"} this can be one of:
+#' \itemize{
+#'   \item \code{"euclidean"}
+#'   \item \code{"cosine"}
+#'   \item \code{"correlation"}
+#' }
+#' If \href{https://cran.r-project.org/package=rnndescent}{rnndescent} is
+#' installed and \code{nn_method = "nndescent"} is specified then many more
+#' metrics are avaiable, including:
+#' \itemize{
+#' \item \code{"braycurtis"}
+#' \item \code{"canberra"}
+#' \item \code{"chebyshev"}
+#' \item \code{"dice"}
+#' \item \code{"hamming"}
+#' \item \code{"hellinger"}
+#' \item \code{"jaccard"}
+#' \item \code{"jensenshannon"}
+#' \item \code{"kulsinski"}
+#' \item \code{"rogerstanimoto"}
+#' \item \code{"russellrao"}
+#' \item \code{"sokalmichener"}
+#' \item \code{"sokalsneath"}
+#' \item \code{"spearmanr"}
+#' \item \code{"symmetrickl"}
+#' \item \code{"tsss"}
+#' \item \code{"yule"}
+#' }
+#' For more details see the package documentation of \code{rnndescent}.
+#' For \code{nn_method = "fnn"}, the distance metric is always "euclidean".
+#'
+#' If \code{X} is a data frame or matrix, then multiple metrics can be
+#' specified, by passing a list to this argument, where the name of each item in
+#' the list is one of the metric names above. The value of each list item should
+#' be a vector giving the names or integer ids of the columns to be included in
+#' a calculation, e.g. \code{metric = list(euclidean = 1:4, manhattan = 5:10)}.
+#'
+#' Each metric calculation results in a separate fuzzy simplicial set, which are
+#' intersected together to produce the final set. Metric names can be repeated.
+#' Because non-numeric columns are removed from the data frame, it is safer to
+#' use column names than integer ids.
+#'
+#' Factor columns can also be used by specifying the metric name
+#' \code{"categorical"}. Factor columns are treated different from numeric
+#' columns and although multiple factor columns can be specified in a vector,
+#' each factor column specified is processed individually. If you specify
+#' a non-factor column, it will be coerced to a factor.
+#'
+#' For a given data block, you may override the \code{pca} and \code{pca_center}
+#' arguments for that block, by providing a list with one unnamed item
+#' containing the column names or ids, and then any of the \code{pca} or
+#' \code{pca_center} overrides as named items, e.g. \code{metric =
+#' list(euclidean = 1:4, manhattan = list(5:10, pca_center = FALSE))}. This
+#' exists to allow mixed binary and real-valued data to be included and to have
+#' PCA applied to both, but with centering applied only to the real-valued data
+#' (it is typical not to apply centering to binary data before PCA is applied).
+#' @param n_epochs Number of epochs to use during the optimization of the
+#'   embedded coordinates. By default, this value is set to \code{500} for
+#'   datasets containing 10,000 vertices or less, and \code{200} otherwise.
+#'   If \code{n_epochs = 0}, then coordinates determined by \code{"init"} will
+#'   be returned.
+#' @param learning_rate Initial learning rate used in optimization of the
+#'   coordinates.
+#' @param scale Scaling to apply to \code{X} if it is a data frame or matrix:
+#' \itemize{
+#'   \item{\code{"none"} or \code{FALSE} or \code{NULL}} No scaling.
+#'   \item{\code{"Z"} or \code{"scale"} or \code{TRUE}} Scale each column to
+#'   zero mean and variance 1.
+#'   \item{\code{"maxabs"}} Center each column to mean 0, then divide each
+#'   element by the maximum absolute value over the entire matrix.
+#'   \item{\code{"range"}} Range scale the entire matrix, so the smallest
+#'   element is 0 and the largest is 1.
+#'   \item{\code{"colrange"}} Scale each column in the range (0,1).
+#' }
+#' For t-UMAP, the default is \code{"none"}.
+#' @param init Type of initialization for the coordinates. Options are:
+#'   \itemize{
+#'     \item \code{"spectral"} Spectral embedding using the normalized Laplacian
+#'     of the fuzzy 1-skeleton, with Gaussian noise added.
+#'     \item \code{"normlaplacian"}. Spectral embedding using the normalized
+#'     Laplacian of the fuzzy 1-skeleton, without noise.
+#'     \item \code{"random"}. Coordinates assigned using a uniform random
+#'     distribution between -10 and 10.
+#'     \item \code{"lvrandom"}. Coordinates assigned using a Gaussian
+#'     distribution with standard deviation 1e-4, as used in LargeVis
+#'     (Tang et al., 2016) and t-SNE.
+#'     \item \code{"laplacian"}. Spectral embedding using the Laplacian Eigenmap
+#'     (Belkin and Niyogi, 2002).
+#'     \item \code{"pca"}. The first two principal components from PCA of
+#'     \code{X} if \code{X} is a data frame, and from a 2-dimensional classical
+#'     MDS if \code{X} is of class \code{"dist"}.
+#'     \item \code{"spca"}. Like \code{"pca"}, but each dimension is then scaled
+#'     so the standard deviation is 1e-4, to give a distribution similar to that
+#'     used in t-SNE. This is an alias for \code{init = "pca", init_sdev =
+#'     1e-4}.
+#'     \item \code{"agspectral"} An "approximate global" modification of
+#'     \code{"spectral"} which all edges in the graph to a value of 1, and then
+#'     sets a random number of edges (\code{negative_sample_rate} edges per
+#'     vertex) to 0.1, to approximate the effect of non-local affinities.
+#'     \item A matrix of initial coordinates.
+#'   }
+#'  For spectral initializations, (\code{"spectral"}, \code{"normlaplacian"},
+#'  \code{"laplacian"}, \code{"agspectral"}), if more than one connected
+#'  component is identified, no spectral initialization is attempted. Instead
+#'  a PCA-based initialization is attempted. If \code{verbose = TRUE} the
+#'  number of connected components are logged to the console. The existence of
+#'  multiple connected components implies that a global view of the data cannot
+#'  be attained with this initialization. Increasing the value of
+#'  \code{n_neighbors} may help.
+#' @param init_sdev If non-\code{NULL}, scales each dimension of the initialized
+#'   coordinates (including any user-supplied matrix) to this standard
+#'   deviation. By default no scaling is carried out, except when \code{init =
+#'   "spca"}, in which case the value is \code{0.0001}. Scaling the input may
+#'   help if the unscaled versions result in initial coordinates with large
+#'   inter-point distances or outliers. This usually results in small gradients
+#'   during optimization and very little progress being made to the layout.
+#'   Shrinking the initial embedding by rescaling can help under these
+#'   circumstances. Scaling the result of \code{init = "pca"} is usually
+#'   recommended and \code{init = "spca"} as an alias for \code{init = "pca",
+#'   init_sdev = 1e-4} but for the spectral initializations the scaled versions
+#'   usually aren't necessary unless you are using a large value of
+#'   \code{n_neighbors} (e.g. \code{n_neighbors = 150} or higher). For
+#'   compatibility with recent versions of the Python UMAP package, if you are
+#'   using \code{init = "spectral"}, then you should also set
+#'   \code{init_sdev = "range"}, which will range scale each of the columns
+#'   containing the initial data between 0-10. This is not set by default to
+#'   maintain backwards compatibility with previous versions of uwot.
+#' @param set_op_mix_ratio Interpolate between (fuzzy) union and intersection as
+#'   the set operation used to combine local fuzzy simplicial sets to obtain a
+#'   global fuzzy simplicial sets. Both fuzzy set operations use the product
+#'   t-norm. The value of this parameter should be between \code{0.0} and
+#'   \code{1.0}; a value of \code{1.0} will use a pure fuzzy union, while
+#'   \code{0.0} will use a pure fuzzy intersection.
+#' @param local_connectivity The local connectivity required -- i.e. the number
+#'   of nearest neighbors that should be assumed to be connected at a local
+#'   level. The higher this value the more connected the manifold becomes
+#'   locally. In practice this should be not more than the local intrinsic
+#'   dimension of the manifold.
+#' @param bandwidth The effective bandwidth of the kernel if we view the
+#'   algorithm as similar to Laplacian Eigenmaps. Larger values induce more
+#'   connectivity and a more global view of the data, smaller values concentrate
+#'   more locally.
+#' @param repulsion_strength Weighting applied to negative samples in low
+#'   dimensional embedding optimization. Values higher than one will result in
+#'   greater weight being given to negative samples.
+#' @param negative_sample_rate The number of negative edge/1-simplex samples to
+#'   use per positive edge/1-simplex sample in optimizing the low dimensional
+#'   embedding.
+#' @param nn_method Method for finding nearest neighbors. Options are:
+#'   \itemize{
+#'     \item \code{"fnn"}. Use exact nearest neighbors via the
+#'       \href{https://cran.r-project.org/package=FNN}{FNN} package.
+#'     \item \code{"annoy"} Use approximate nearest neighbors via the
+#'       \href{https://cran.r-project.org/package=RcppAnnoy}{RcppAnnoy} package.
+#'     \item \code{"hnsw"} Use approximate nearest neighbors with the
+#'       Hierarchical Navigable Small World (HNSW) method (Malkov and Yashunin,
+#'       2018) via the
+#'       \href{https://cran.r-project.org/package=RcppHNSW}{RcppHNSW} package.
+#'       \code{RcppHNSW} is not a dependency of this package: this option is
+#'       only available if you have installed \code{RcppHNSW} yourself. Also,
+#'       HNSW only supports the following arguments for \code{metric} and
+#'       \code{target_metric}: \code{"euclidean"}, \code{"cosine"} and
+#'       \code{"correlation"}.
+#'     \item \code{"nndescent"} Use approximate nearest neighbors with the
+#'       Nearest Neighbor Descent method (Dong et al., 2011) via the
+#'       \href{https://cran.r-project.org/package=rnndescent}{rnndescent}
+#'       package. \code{rnndescent} is not a dependency of this package: this
+#'       option is only available if you have installed \code{rnndescent}
+#'       yourself.
+#'    }
+#'   By default, if \code{X} has less than 4,096 vertices, the exact nearest
+#'   neighbors are found. Otherwise, approximate nearest neighbors are used.
+#'   You may also pass pre-calculated nearest neighbor data to this argument. It
+#'   must be one of two formats, either a list consisting of two elements:
+#'   \itemize{
+#'     \item \code{"idx"} (or \code{"index"}). A \code{n_vertices x n_neighbors}
+#'     matrix containing the integer indexes of the nearest neighbors in
+#'     \code{X}.
+#'     \emph{Each vertex is considered to be its own nearest neighbor, i.e.
+#'     \code{idx[, 1] == 1:n_vertices}}.
+#'     \item \code{"dist"} (or \code{"distance"}). A
+#'     \code{n_vertices x n_neighbors} matrix containing the distances of the
+#'     nearest neighbors.
+#'   }
+#'   or a sparse distance matrix of type \code{dgCMatrix}, with dimensions
+#'   \code{n_vertices x n_vertices}. Distances should be arranged by column,
+#'   i.e. a non-zero entry in row \code{j} of the \code{i}th column indicates
+#'   that the \code{j}th observation in \code{X} is a nearest neighbor of the
+#'   \code{i}th observation with the distance given by the value of that
+#'   element.
+#'   The \code{n_neighbors} parameter is ignored when using precomputed
+#'   nearest neighbor data. If using the sparse distance matrix input, each
+#'   column can contain a different number of neighbors.
+#' @param n_trees Number of trees to build when constructing the nearest
+#'   neighbor index. The more trees specified, the larger the index, but the
+#'   better the results. With \code{search_k}, determines the accuracy of the
+#'   Annoy nearest neighbor search. Only used if the \code{nn_method} is
+#'   \code{"annoy"}. Sensible values are between \code{10} to \code{100}.
+#' @param search_k Number of nodes to search during the neighbor retrieval. The
+#'   larger k, the more the accurate results, but the longer the search takes.
+#'   With \code{n_trees}, determines the accuracy of the Annoy nearest neighbor
+#'   search. Only used if the \code{nn_method} is \code{"annoy"}.
+#' @param nn_args A list containing additional arguments to pass to the nearest
+#'   neighbor method. For \code{nn_method = "annoy"}, you can specify
+#'   \code{"n_trees"} and \code{"search_k"}, and these will override the
+#'   \code{n_trees} and \code{search_k} parameters.
+#'   For \code{nn_method = "hnsw"}, you may specify the following arguments:
+#'   \itemize{
+#'   \item \code{M} The maximum number of neighbors to keep for each vertex.
+#'   Reasonable values are \code{2} to \code{100}. Higher values give better
+#'   recall at the cost of more memory. Default value is \code{16}.
+#'   \item \code{ef_construction} A positive integer specifying the size of
+#'   the dynamic list used during index construction. A higher value will
+#'   provide better results at the cost of a longer time to build the index.
+#'   Default is \code{200}.
+#'   \item \code{ef} A positive integer specifying the size of the dynamic
+#'   list used during search. This cannot be smaller than \code{n_neighbors}
+#'   and cannot be higher than the number of items in the index. Default is
+#'   \code{10}.
+#'   }
+#'   For \code{nn_method = "nndescent"}, you may specify the following
+#'   arguments:
+#'   \itemize{
+#'   \item \code{n_trees} The number of trees to use in a random projection
+#'   forest to initialize the search. A larger number will give more accurate
+#'   results at the cost of a longer computation time. The default of
+#'   \code{NULL} means that the number is chosen based on the number of
+#'   observations in \code{X}.
+#'   \item \code{max_candidates} The number of potential neighbors to explore
+#'   per iteration. By default, this is set to \code{n_neighbors} or \code{60},
+#'   whichever is smaller. A larger number will give more accurate results at
+#'   the cost of a longer computation time.
+#'   \item \code{n_iters} The number of iterations to run the search. A larger
+#'   number will give more accurate results at the cost of a longer computation
+#'   time. By default, this will be chosen based on the number of observations
+#'   in \code{X}. You may also need to modify the convergence criterion
+#'   \code{delta}.
+#'   \item \code{delta} The minimum relative change in the neighbor graph
+#'   allowed before early stopping. Should be a value between 0 and 1. The
+#'   smaller the value, the smaller the amount of progress between iterations is
+#'   allowed. Default value of \code{0.001} means that at least 0.1% of the
+#'   neighbor graph must be updated at each iteration.
+#'   \item \code{init} How to initialize the nearest neighbor descent. By
+#'   default this is set to \code{"tree"} and uses a random project forest.
+#'   If you set this to \code{"rand"}, then a random selection is used. Usually
+#'   this is less accurate than using RP trees, but for high-dimensional cases,
+#'   there may be little difference in the quality of the initialization and
+#'   random initialization will be a lot faster. If you set this to
+#'   \code{"rand"}, then the \code{n_trees} parameter is ignored.
+#'   \item \code{pruning_degree_multiplier} The maximum number of edges per node
+#'   to retain in the search graph, relative to \code{n_neighbors}. A larger
+#'   value will give more accurate results at the cost of a longer computation
+#'   time. Default is \code{1.5}. This parameter only affects neighbor search
+#'   when transforming new data with \code{\link{umap_transform}}.
+#'   \item \code{epsilon} Controls the degree of the back-tracking when
+#'   traversing the search graph. Setting this to \code{0.0} will do a greedy
+#'   search with no back-tracking. A larger value will give more accurate
+#'   results at the cost of a longer computation time. Default is \code{0.1}.
+#'   This parameter only affects neighbor search when transforming new data with
+#'   \code{\link{umap_transform}}.
+#'   \item \code{max_search_fraction} Specifies the maximum fraction of the
+#'   search graph to traverse. By default, this is set to \code{1.0}, so the
+#'   entire graph (i.e. all items in \code{X}) may be visited. You may want to
+#'   set this to a smaller value if you have a very large dataset (in
+#'   conjunction with \code{epsilon}) to avoid an inefficient exhaustive search
+#'   of the data in \code{X}. This parameter only affects neighbor search when
+#'   transforming new data with \code{\link{umap_transform}}.
+#'   }
+#'   For \code{nn_method = "nndescent"}, you may specify the following
+#'   arguments:
+#'   \itemize{
+#'   \item \code{n_trees} The number of trees to use in a random projection
+#'   forest to initialize the search. A larger number will give more accurate
+#'   results at the cost of a longer computation time. The default of
+#'   \code{NULL} means that the number is chosen based on the number of
+#'   observations in \code{X}.
+#'   \item \code{max_candidates} The number of potential neighbors to explore
+#'   per iteration. By default, this is set to \code{n_neighbors} or \code{60},
+#'   whichever is smaller. A larger number will give more accurate results at
+#'   the cost of a longer computation time.
+#'   \item \code{n_iters} The number of iterations to run the search. A larger
+#'   number will give more accurate results at the cost of a longer computation
+#'   time. By default, this will be chosen based on the number of observations
+#'   in \code{X}. You may also need to modify the convergence criterion
+#'   \code{delta}.
+#'   \item \code{delta} The minimum relative change in the neighbor graph
+#'   allowed before early stopping. Should be a value between 0 and 1. The
+#'   smaller the value, the smaller the amount of progress between iterations is
+#'   allowed. Default value of \code{0.001} means that at least 0.1% of the
+#'   neighbor graph must be updated at each iteration.
+#'   \item \code{init} How to initialize the nearest neighbor descent. By
+#'   default this is set to \code{"tree"} and uses a random project forest. If
+#'   you set this to \code{"rand"}, then a random selection is used. Usually
+#'   this is less accurate than using RP trees, but for high-dimensional cases,
+#'   there may be little difference in the quality of the initialization and
+#'   random initialization will be a lot faster. If you set this to
+#'   \code{"rand"}, then the \code{n_trees} parameter is ignored.
+#'   \item \code{pruning_degree_multiplier} The maximum number of edges per node
+#'   to retain in the search graph, relative to \code{n_neighbors}. A larger
+#'   value will give more accurate results at the cost of a longer computation
+#'   time. Default is \code{1.5}. This parameter only affects neighbor search
+#'   when transforming new data with \code{\link{umap_transform}}.
+#'   \item \code{epsilon} Controls the degree of the back-tracking when
+#'   traversing the search graph. Setting this to \code{0.0} will do a greedy
+#'   search with no back-tracking. A larger value will give more accurate
+#'   results at the cost of a longer computation time. Default is \code{0.1}.
+#'   This parameter only affects neighbor search when transforming new data with
+#'   \code{\link{umap_transform}}.
+#'   \item \code{max_search_fraction} Specifies the maximum fraction of the
+#'   search graph to traverse. By default, this is set to \code{1.0}, so the
+#'   entire graph (i.e. all items in \code{X}) may be visited. You may want to
+#'   set this to a smaller value if you have a very large dataset (in
+#'   conjunction with \code{epsilon}) to avoid an inefficient exhaustive search
+#'   of the data in \code{X}. This parameter only affects neighbor search when
+#'   transforming new data with \code{\link{umap_transform}}.
+#'   }
+#' @param y Optional target data for supervised dimension reduction. Can be a
+#' vector, matrix or data frame. Use the \code{target_metric} parameter to
+#' specify the metrics to use, using the same syntax as \code{metric}. Usually
+#' either a single numeric or factor column is used, but more complex formats
+#' are possible. The following types are allowed:
+#'   \itemize{
+#'     \item Factor columns with the same length as \code{X}. \code{NA} is
+#'     allowed for any observation with an unknown level, in which case
+#'     UMAP operates as a form of semi-supervised learning. Each column is
+#'     treated separately.
+#'     \item Numeric data. \code{NA} is \emph{not} allowed in this case. Use the
+#'     parameter \code{target_n_neighbors} to set the number of neighbors used
+#'     with \code{y}. If unset, \code{n_neighbors} is used. Unlike factors,
+#'     numeric columns are grouped into one block unless \code{target_metric}
+#'     specifies otherwise. For example, if you wish columns \code{a} and
+#'     \code{b} to be treated separately, specify
+#'     \code{target_metric = list(euclidean = "a", euclidean = "b")}. Otherwise,
+#'     the data will be effectively treated as a matrix with two columns.
+#'     \item Nearest neighbor data, consisting of a list of two matrices,
+#'     \code{idx} and \code{dist}. These represent the precalculated nearest
+#'     neighbor indices and distances, respectively. This
+#'     is the same format as that expected for precalculated data in
+#'     \code{nn_method}. This format assumes that the underlying data was a
+#'     numeric vector. Any user-supplied value of the \code{target_n_neighbors}
+#'     parameter is ignored in this case, because the the number of columns in
+#'     the matrices is used for the value. Multiple nearest neighbor data using
+#'     different metrics can be supplied by passing a list of these lists.
+#'   }
+#' Unlike \code{X}, all factor columns included in \code{y} are automatically
+#' used.
+#' @param target_n_neighbors Number of nearest neighbors to use to construct the
+#'   target simplicial set. Default value is \code{n_neighbors}. Applies only if
+#'   \code{y} is non-\code{NULL} and \code{numeric}.
+#' @param target_metric The metric used to measure distance for \code{y} if
+#'   using supervised dimension reduction. Used only if \code{y} is numeric.
+#' @param target_weight Weighting factor between data topology and target
+#'   topology. A value of 0.0 weights entirely on data, a value of 1.0 weights
+#'   entirely on target. The default of 0.5 balances the weighting equally
+#'   between data and target. Only applies if \code{y} is non-\code{NULL}.
+#' @param pca If set to a positive integer value, reduce data to this number of
+#'   columns using PCA. Doesn't applied if the distance \code{metric} is
+#'   \code{"hamming"}, or the dimensions of the data is larger than the
+#'   number specified (i.e. number of rows and columns must be larger than the
+#'   value of this parameter). If you have > 100 columns in a data frame or
+#'   matrix, reducing the number of columns in this way may substantially
+#'   increase the performance of the nearest neighbor search at the cost of a
+#'   potential decrease in accuracy. In many t-SNE applications, a value of 50
+#'   is recommended, although there's no guarantee that this is appropriate for
+#'   all settings.
+#' @param pca_center If \code{TRUE}, center the columns of \code{X} before
+#'   carrying out PCA. For binary data, it's recommended to set this to
+#'   \code{FALSE}.
+#' @param pca_method Method to carry out any PCA dimensionality reduction when
+#'   the \code{pca} parameter is specified. Allowed values are:
+#'   \itemize{
+#'     \item{\code{"irlba"}}. Uses \code{\link[irlba]{prcomp_irlba}} from the
+#'     \href{https://cran.r-project.org/package=irlba}{irlba} package.
+#'     \item{\code{"rsvd"}}. Uses 5 iterations of \code{\link[irlba]{svdr}} from
+#'     the \href{https://cran.r-project.org/package=irlba}{irlba} package.
+#'     This is likely to give much faster but potentially less accurate results
+#'     than using \code{"irlba"}. For the purposes of nearest neighbor
+#'     calculation and coordinates initialization, any loss of accuracy doesn't
+#'     seem to matter much.
+#'     \item{\code{"bigstatsr"}}. Uses \code{\link[bigstatsr]{big_randomSVD}}
+#'     from the \href{https://cran.r-project.org/package=bigstatsr}{bigstatsr}
+#'     package. The SVD methods used in \code{bigstatsr} may be faster on
+#'     systems without access to efficient linear algebra libraries (e.g.
+#'     Windows). \strong{Note}: \code{bigstatsr} is \emph{not} a dependency of
+#'     uwot: if you choose to use this package for PCA, you \emph{must} install
+#'     it yourself.
+#'     \item{\code{"svd"}}. Uses \code{\link[base]{svd}} for the SVD. This is
+#'     likely to be slow for all but the smallest datasets.
+#'     \item{\code{"auto"}} (the default). Uses \code{"irlba"}, unless more than
+#'     50% of the full set of singular vectors would be calculated, in which
+#'     case \code{"svd"} is used.
+#'   }
+#' @param pcg_rand If \code{TRUE}, use the PCG random number generator (O'Neill,
+#'   2014) during optimization. Otherwise, use the faster (but probably less
+#'   statistically good) Tausworthe "taus88" generator. The default is
+#'   \code{TRUE}. This parameter has been superseded by \code{rng_type} -- if
+#'   both are set, \code{rng_type} takes precedence.
+#' @param rng_type The type of random number generator to use during
+#'   optimization. One of:
+#'   \itemize{
+#'    \item{\code{"pcg"}}. Use the PCG random number generator (O'Neill, 2014).
+#'    \item{\code{"tausworthe"}}. Use the Tausworthe "taus88" generator.
+#'    \item{\code{"deterministic"}}. Use a deterministic number generator. This
+#'    isn't actually random, but may provide enough variation in the negative
+#'    sampling to give a good embedding and can provide a noticeable speed-up.
+#'   }
+#'   For backwards compatibility, by default this is unset and the choice of
+#'   \code{pcg_rand} is used (making "pcg" the effective default).
+#' @param fast_sgd If \code{TRUE}, then the following combination of parameters
+#'   is set: \code{pcg_rand = TRUE} and \code{n_sgd_threads = "auto"}. The
+#'   default is \code{FALSE}. Setting this to \code{TRUE} will speed up the
+#'   stochastic optimization phase, but give a potentially less accurate
+#'   embedding, and which will not be exactly reproducible even with a fixed
+#'   seed. For visualization, \code{fast_sgd = TRUE} will give perfectly good
+#'   results. For more generic dimensionality reduction, it's safer to leave
+#'   \code{fast_sgd = FALSE}. If \code{fast_sgd = TRUE}, then user-supplied
+#'   values of \code{pcg_rand} and \code{n_sgd_threads}, are ignored.
+#' @param batch If \code{TRUE}, then embedding coordinates are updated at the
+#'   end of each epoch rather than during the epoch. In batch mode, results are
+#'   reproducible with a fixed random seed even with \code{n_sgd_threads > 1},
+#'   at the cost of a slightly higher memory use. You may also have to modify
+#'   \code{learning_rate} and increase \code{n_epochs}, so whether this provides
+#'   a speed increase over the single-threaded optimization is likely to be
+#'   dataset and hardware-dependent.
+#' @param ret_model If \code{TRUE}, then return extra data that can be used to
+#'   add new data to an existing embedding via \code{\link{umap_transform}}. The
+#'   embedded coordinates are returned as the list item \code{embedding}. If
+#'   \code{FALSE}, just return the coordinates. This parameter can be used in
+#'   conjunction with \code{ret_nn} and \code{ret_extra}. Note that some
+#'   settings are incompatible with the production of a UMAP model: external
+#'   neighbor data (passed via a list to \code{nn_method}), and factor columns
+#'   that were included via the \code{metric} parameter. In the latter case, the
+#'   model produced is based only on the numeric data. A transformation using
+#'   new data is possible, but the factor columns in the new data are ignored.
+#'   Note that setting \code{ret_model = TRUE} forces the use of the approximate
+#'   nearest neighbors method. Because small datasets would otherwise use exact
+#'   nearest neighbor calculations, setting \code{ret_model = TRUE} means that
+#'   different results may be returned for small datasets in terms of both the
+#'   returned nearest neighbors (if requested) and the final embedded
+#'   coordinates, compared to \code{ret_model = FALSE}, even if the random
+#'   number seed is fixed. To avoid this, explicitly set
+#'   \code{nn_method = "annoy"} in the \code{ret_model = FALSE} case.
+#' @param ret_nn If \code{TRUE}, then in addition to the embedding, also return
+#'   nearest neighbor data that can be used as input to \code{nn_method} to
+#'   avoid the overhead of repeatedly calculating the nearest neighbors when
+#'   manipulating unrelated parameters (e.g. \code{min_dist}, \code{n_epochs},
+#'   \code{init}). See the "Value" section for the names of the list items. If
+#'   \code{FALSE}, just return the coordinates. Note that the nearest neighbors
+#'   could be sensitive to data scaling, so be wary of reusing nearest neighbor
+#'   data if modifying the \code{scale} parameter. This parameter can be used in
+#'   conjunction with \code{ret_model} and \code{ret_extra}.
+#' @param ret_extra A vector indicating what extra data to return. May contain
+#'   any combination of the following strings:
+#'   \itemize{
+#'     \item \code{"model"} Same as setting \code{ret_model = TRUE}.
+#'     \item \code{"nn"} Same as setting \code{ret_nn = TRUE}.
+#'     \item \code{"fgraph"} the high dimensional fuzzy graph (i.e. the fuzzy
+#'       simplicial set of the merged local views of the input data). The graph
+#'       is returned as a sparse symmetric N x N matrix of class
+#'       \link[Matrix]{dgCMatrix-class}, where a non-zero entry (i, j) gives the
+#'       membership strength of the edge connecting vertex i and vertex j. This
+#'       can be considered analogous to the input probability (or similarity or
+#'       affinity) used in t-SNE and LargeVis. Note that the graph is further
+#'       sparsified by removing edges with sufficiently low membership strength
+#'       that they would not be sampled by the probabilistic edge sampling
+#'       employed for optimization and therefore the number of non-zero elements
+#'       in the matrix is dependent on \code{n_epochs}. If you are only
+#'       interested in the fuzzy input graph (e.g. for clustering), setting
+#'       \code{n_epochs = 0} will avoid any further sparsifying. Be aware that
+#'       setting \code{binary_edge_weights = TRUE} will affect this graph (all
+#'       non-zero edge weights will be 1).
+#'    \item \code{"sigma"} the normalization value for each observation in the
+#'       dataset when constructing the smoothed distances to each of its
+#'       neighbors. This gives some sense of the local density of each
+#'       observation in the high dimensional space: higher values of
+#'       \code{sigma} indicate a higher dispersion or lower density.
+#'   }
+#' @param n_threads Number of threads to use (except during stochastic gradient
+#'   descent). Default is half the number of concurrent threads supported by the
+#'   system. For nearest neighbor search, this controls the search phase. For
+#'   \code{nn_method = "annoy"}, if \code{n_threads > 1}, then the Annoy index
+#'   will be temporarily written to disk in the location determined by
+#'   \code{\link[base]{tempfile}}.
+#' @param n_build_threads Number of threads to use when building nearest
+#'   neighbor indexes. Default is \code{NULL}, which uses \code{n_threads}. To
+#'   improve determinism, use \code{n_build_threads = 1}. Only
+#'   applies for \code{nn_method = "hnsw"} or \code{nn_method = "nndescent"}.
+#'   The Annoy-based index always use a single thread.
+#' @param n_sgd_threads Number of threads to use during stochastic gradient
+#'   descent. If set to > 1, then be aware that if \code{batch = FALSE}, results
+#'   will \emph{not} be reproducible, even if \code{set.seed} is called with a
+#'   fixed seed before running. Set to \code{"auto"} to use the same value as
+#'   \code{n_threads}.
+#' @param grain_size The minimum amount of work to do on each thread. If this
+#'   value is set high enough, then less than \code{n_threads} or
+#'   \code{n_sgd_threads} will be used for processing, which might give a
+#'   performance improvement if the overhead of thread management and context
+#'   switching was outweighing the improvement due to concurrent processing.
+#'   This should be left at default (\code{1}) and work will be spread evenly
+#'   over all the threads specified.
+#' @param tmpdir Temporary directory to store nearest neighbor indexes during
+#'   nearest neighbor search. Default is \code{\link{tempdir}}. The index is
+#'   only written to disk if \code{n_threads > 1} and
+#'   \code{nn_method = "annoy"}; otherwise, this parameter is ignored.
+#' @param verbose If \code{TRUE}, log details to the console.
+#' @param opt_args A list of optimizer parameters, used when
+#'   \code{batch = TRUE}. The default optimization method used is Adam (Kingma
+#'   and Ba, 2014).
+#'   \itemize{
+#'     \item \code{method} The optimization method to use. Either \code{"adam"}
+#'     or \code{"sgd"} (stochastic gradient descent). Default: \code{"adam"}.
+#'     \item \code{beta1} (Adam only). The weighting parameter for the
+#'     exponential moving average of the first moment estimator. Effectively the
+#'     momentum parameter. Should be a floating point value between 0 and 1.
+#'     Higher values can smooth oscillatory updates in poorly-conditioned
+#'     situations and may allow for a larger \code{learning_rate} to be
+#'     specified, but too high can cause divergence. Default: \code{0.5}.
+#'     \item \code{beta2} (Adam only). The weighting parameter for the
+#'     exponential moving average of the uncentered second moment estimator.
+#'     Should be a floating point value between 0 and 1. Controls the degree of
+#'     adaptivity in the step-size. Higher values put more weight on previous
+#'     time steps. Default: \code{0.9}.
+#'     \item \code{eps} (Adam only). Intended to be a small value to prevent
+#'     division by zero, but in practice can also affect convergence due to its
+#'     interaction with \code{beta2}. Higher values reduce the effect of the
+#'     step-size adaptivity and bring the behavior closer to stochastic gradient
+#'     descent with momentum. Typical values are between 1e-8 and 1e-3. Default:
+#'     \code{1e-7}.
+#'     \item \code{alpha} The initial learning rate. Default: the value of the
+#'     \code{learning_rate} parameter.
+#'   }
+#' @param epoch_callback A function which will be invoked at the end of every
+#'   epoch. Its signature should be: \code{(epoch, n_epochs, coords)}, where:
+#'   \itemize{
+#'     \item \code{epoch} The current epoch number (between \code{1} and
+#'     \code{n_epochs}).
+#'     \item \code{n_epochs} Number of epochs to use during the optimization of
+#'     the embedded coordinates.
+#'     \item \code{coords} The embedded coordinates as of the end of the current
+#'     epoch, as a matrix with dimensions (N, \code{n_components}).
+#'   }
+#' @param binary_edge_weights If \code{TRUE} then edge weights in the input
+#'   graph are treated as binary (0/1) rather than real valued. This affects the
+#'   sampling frequency of neighbors and is the strategy used by the PaCMAP
+#'   method (Wang and co-workers, 2020). Practical (Böhm and co-workers, 2020)
+#'   and theoretical (Damrich and Hamprecht, 2021) work suggests this has little
+#'   effect on UMAP's performance.
+#' @param seed Integer seed to use to initialize the random number generator
+#'   state. Combined with \code{n_sgd_threads = 1} or \code{batch = TRUE}, this
+#'   should give consistent output across multiple runs on a given installation.
+#'   Setting this value is equivalent to calling \code{\link[base]{set.seed}},
+#'   but it may be more convenient in some situations than having to call a
+#'   separate function. The default is to not set a seed. If
+#'   \code{ret_model = TRUE}, the seed will be stored in the output model and
+#'   then used to set the seed inside \code{\link{umap_transform}}.
+#' @return A matrix of optimized coordinates, or:
+#'   \itemize{
+#'     \item if \code{ret_model = TRUE} (or \code{ret_extra} contains
+#'     \code{"model"}), returns a list containing extra information that can be
+#'     used to add new data to an existing embedding via
+#'     \code{\link{umap_transform}}. In this case, the coordinates are available
+#'     in the list item \code{embedding}. \bold{NOTE}: The contents of
+#'     the \code{model} list should \emph{not} be considered stable or part of
+#'     the public API, and are purposely left undocumented.
+#'     \item if \code{ret_nn = TRUE} (or \code{ret_extra} contains \code{"nn"}),
+#'     returns the nearest neighbor data as a list called \code{nn}. This
+#'     contains one list for each \code{metric} calculated, itself containing a
+#'     matrix \code{idx} with the integer ids of the neighbors; and a matrix
+#'     \code{dist} with the distances. The \code{nn} list (or a sub-list) can be
+#'     used as input to the \code{nn_method} parameter.
+#'     \item if \code{ret_extra} contains \code{"fgraph"} returns the high
+#'     dimensional fuzzy graph as a sparse matrix called \code{fgraph}, of type
+#'     \link[Matrix]{dgCMatrix-class}.
+#'     \item if \code{ret_extra} contains \code{"sigma"}, returns a vector of the
+#'     smooth knn distance normalization terms for each observation as
+#'     \code{"sigma"} and a vector \code{"rho"} containing the largest
+#'     distance to the locally connected neighbors of each observation.
+#'     \item if \code{ret_extra} contains \code{"localr"}, returns a vector of
+#'     the estimated local radii, the sum of \code{"sigma"} and \code{"rho"}.
+#'   }
+#'   The returned list contains the combined data from any combination of
+#'   specifying \code{ret_model}, \code{ret_nn} and \code{ret_extra}.
+#' @examples
+#' iris_tumap <- tumap(iris, n_neighbors = 50, learning_rate = 0.5)
+#'
+#' @references
+#' Belkin, M., & Niyogi, P. (2002).
+#' Laplacian eigenmaps and spectral techniques for embedding and clustering.
+#' In \emph{Advances in neural information processing systems}
+#' (pp. 585-591).
+#' \url{http://papers.nips.cc/paper/1961-laplacian-eigenmaps-and-spectral-techniques-for-embedding-and-clustering.pdf}
+#'
+#' Böhm, J. N., Berens, P., & Kobak, D. (2020).
+#' A unifying perspective on neighbor embeddings along the attraction-repulsion spectrum.
+#' \emph{arXiv preprint} \emph{arXiv:2007.08902}.
+#' \url{https://arxiv.org/abs/2007.08902}
+#'
+#' Damrich, S., & Hamprecht, F. A. (2021).
+#' On UMAP's true loss function.
+#' \emph{Advances in Neural Information Processing Systems}, \emph{34}.
+#' \url{https://proceedings.neurips.cc/paper/2021/hash/2de5d16682c3c35007e4e92982f1a2ba-Abstract.html}
+#'
+#' Dong, W., Moses, C., & Li, K. (2011, March).
+#' Efficient k-nearest neighbor graph construction for generic similarity measures.
+#' In \emph{Proceedings of the 20th international conference on World Wide Web}
+#' (pp. 577-586).
+#' ACM.
+#' \doi{10.1145/1963405.1963487}.
+#'
+#' Kingma, D. P., & Ba, J. (2014).
+#' Adam: A method for stochastic optimization.
+#' \emph{arXiv preprint} \emph{arXiv}:1412.6980.
+#' \url{https://arxiv.org/abs/1412.6980}
+#'
+#' Malkov, Y. A., & Yashunin, D. A. (2018).
+#' Efficient and robust approximate nearest neighbor search using hierarchical
+#' navigable small world graphs.
+#' \emph{IEEE transactions on pattern analysis and machine intelligence}, \emph{42}(4), 824-836.
+#'
+#' McInnes, L., Healy, J., & Melville, J. (2018).
+#' UMAP: Uniform Manifold Approximation and Projection for Dimension Reduction
+#' \emph{arXiv preprint} \emph{arXiv}:1802.03426.
+#' \url{https://arxiv.org/abs/1802.03426}
+#'
+#' O'Neill, M. E. (2014).
+#' \emph{PCG: A family of simple fast space-efficient statistically good
+#' algorithms for random number generation}
+#' (Report No. HMC-CS-2014-0905). Harvey Mudd College.
+#'
+#' Tang, J., Liu, J., Zhang, M., & Mei, Q. (2016, April).
+#' Visualizing large-scale and high-dimensional data.
+#' In \emph{Proceedings of the 25th International Conference on World Wide Web}
+#' (pp. 287-297).
+#' International World Wide Web Conferences Steering Committee.
+#' \url{https://arxiv.org/abs/1602.00370}
+#'
+#' Van der Maaten, L., & Hinton, G. (2008).
+#' Visualizing data using t-SNE.
+#' \emph{Journal of Machine Learning Research}, \emph{9} (2579-2605).
+#' \url{https://www.jmlr.org/papers/v9/vandermaaten08a.html}
+#'
+#' Wang, Y., Huang, H., Rudin, C., & Shaposhnik, Y. (2021).
+#' Understanding How Dimension Reduction Tools Work: An Empirical Approach to Deciphering t-SNE, UMAP, TriMap, and PaCMAP for Data Visualization.
+#' \emph{Journal of Machine Learning Research}, \emph{22}(201), 1-73.
+#' \url{https://www.jmlr.org/papers/v22/20-1061.html}
+#'
+#' @export
+tumap <- function(X, n_neighbors = 15, n_components = 2, metric = "euclidean",
+                  n_epochs = NULL,
+                  learning_rate = 1, scale = FALSE,
+                  init = "spectral", init_sdev = NULL,
+                  set_op_mix_ratio = 1.0, local_connectivity = 1.0,
+                  bandwidth = 1.0, repulsion_strength = 1.0,
+                  negative_sample_rate = 5.0,
+                  nn_method = NULL, n_trees = 50,
+                  search_k = 2 * n_neighbors * n_trees,
+                  n_threads = NULL,
+                  n_build_threads = NULL,
+                  n_sgd_threads = 0,
+                  grain_size = 1,
+                  y = NULL, target_n_neighbors = n_neighbors,
+                  target_metric = "euclidean",
+                  target_weight = 0.5,
+                  pca = NULL, pca_center = TRUE,
+                  pcg_rand = TRUE,
+                  fast_sgd = FALSE,
+                  ret_model = FALSE, ret_nn = FALSE, ret_extra = c(),
+                  tmpdir = tempdir(),
+                  verbose = getOption("verbose", TRUE),
+                  batch = FALSE,
+                  opt_args = NULL, epoch_callback = NULL,
+                  pca_method = NULL,
+                  binary_edge_weights = FALSE,
+                  seed = NULL,
+                  nn_args = list(),
+                  rng_type = NULL) {
+  uwot(
+    X = X, n_neighbors = n_neighbors, n_components = n_components,
+    metric = metric,
+    n_epochs = n_epochs, alpha = learning_rate, scale = scale,
+    init = init, init_sdev = init_sdev,
+    spread = NULL, min_dist = NULL, set_op_mix_ratio = set_op_mix_ratio,
+    local_connectivity = local_connectivity, bandwidth = bandwidth,
+    gamma = repulsion_strength, negative_sample_rate = negative_sample_rate,
+    a = NULL, b = NULL, nn_method = nn_method, n_trees = n_trees,
+    search_k = search_k,
+    method = "tumap",
+    n_threads = n_threads, n_build_threads = n_build_threads,
+    n_sgd_threads = n_sgd_threads,
+    grain_size = grain_size,
+    y = y, target_n_neighbors = target_n_neighbors,
+    target_weight = target_weight, target_metric = target_metric,
+    pca = pca, pca_center = pca_center, pca_method = pca_method,
+    pcg_rand = pcg_rand,
+    fast_sgd = fast_sgd,
+    ret_model = ret_model || "model" %in% ret_extra,
+    ret_nn = ret_nn || "nn" %in% ret_extra,
+    ret_fgraph = "fgraph" %in% ret_extra,
+    ret_sigma = "sigma" %in% ret_extra,
+    ret_localr = "localr" %in% ret_extra,
+    batch = batch,
+    opt_args = opt_args,
+    epoch_callback = epoch_callback,
+    binary_edge_weights = binary_edge_weights,
+    seed = seed,
+    tmpdir = tmpdir,
+    verbose = verbose,
+    nn_args = nn_args,
+    rng_type = rng_type
+  )
+}
+
+#' Dimensionality Reduction with a LargeVis-like method
+#'
+#' Carry out dimensionality reduction of a dataset using a method similar to
+#' LargeVis (Tang et al., 2016).
+#'
+#' \code{lvish} differs from the official LargeVis implementation in the
+#' following:
+#'
+#' \itemize{
+#'   \item Only the nearest-neighbor index search phase is multi-threaded.
+#'   \item Matrix input data is not normalized.
+#'   \item The \code{n_trees} parameter cannot be dynamically chosen based on
+#'   data set size.
+#'   \item Nearest neighbor results are not refined via the
+#'   neighbor-of-my-neighbor method. The \code{search_k} parameter is twice
+#'   as large than default to compensate.
+#'   \item Gradient values are clipped to \code{4.0} rather than \code{5.0}.
+#'   \item Negative edges are generated by uniform sampling of vertexes rather
+#'   than their degree ^ 0.75.
+#'   \item The default number of samples is much reduced. The default number of
+#'   epochs, \code{n_epochs}, is set to \code{5000}, much larger than for
+#'   \code{\link{umap}}, but may need to be increased further depending on your
+#'   dataset. Using \code{init = "spectral"} can help.
+#' }
+#'
+#' @param X Input data. Can be a \code{\link{data.frame}}, \code{\link{matrix}},
+#'   \code{\link[stats]{dist}} object or \code{\link[Matrix]{sparseMatrix}}.
+#'   Matrix and data frames should contain one observation per row. Data frames
+#'   will have any non-numeric columns removed, although factor columns will be
+#'   used if explicitly included via \code{metric} (see the help for
+#'   \code{metric} for details). A sparse matrix is interpreted as a distance
+#'   matrix, and is assumed to be symmetric, so you can also pass in an
+#'   explicitly upper or lower triangular sparse matrix to save storage. There
+#'   must be at least \code{n_neighbors} non-zero distances for each row. Both
+#'   implicit and explicit zero entries are ignored. Set zero distances you want
+#'   to keep to an arbitrarily small non-zero value (e.g. \code{1e-10}).
+#'   \code{X} can also be \code{NULL} if pre-computed nearest neighbor data is
+#'   passed to \code{nn_method}, and \code{init} is not \code{"spca"} or
+#'   \code{"pca"}.
+#' @param perplexity Controls the size of the local neighborhood used for
+#'   manifold approximation. This is the analogous to \code{n_neighbors} in
+#'   \code{\link{umap}}. Change this, rather than \code{n_neighbors}.
+#' @param n_neighbors The number of neighbors to use when calculating the
+#'  \code{perplexity}. Usually set to three times the value of the
+#'  \code{perplexity}. Must be at least as large as \code{perplexity}.
+#' @param n_components The dimension of the space to embed into. This defaults
+#'   to \code{2} to provide easy visualization, but can reasonably be set to any
+#'   integer value in the range \code{2} to \code{100}.
+#' @param metric Type of distance metric to use to find nearest neighbors. For
+#'  \code{nn_method = "annoy"} this can be one of:
+#' \itemize{
+#'   \item \code{"euclidean"} (the default)
+#'   \item \code{"cosine"}
+#'   \item \code{"manhattan"}
+#'   \item \code{"hamming"}
+#'   \item \code{"correlation"} (a distance based on the Pearson correlation)
+#'   \item \code{"categorical"} (see below)
+#' }
+#' For \code{nn_method = "hnsw"} this can be one of:
+#' \itemize{
+#'   \item \code{"euclidean"}
+#'   \item \code{"cosine"}
+#'   \item \code{"correlation"}
+#' }
+#' If \href{https://cran.r-project.org/package=rnndescent}{rnndescent} is
+#' installed and \code{nn_method = "nndescent"} is specified then many more
+#' metrics are avaiable, including:
+#' \itemize{
+#' \item \code{"braycurtis"}
+#' \item \code{"canberra"}
+#' \item \code{"chebyshev"}
+#' \item \code{"dice"}
+#' \item \code{"hamming"}
+#' \item \code{"hellinger"}
+#' \item \code{"jaccard"}
+#' \item \code{"jensenshannon"}
+#' \item \code{"kulsinski"}
+#' \item \code{"rogerstanimoto"}
+#' \item \code{"russellrao"}
+#' \item \code{"sokalmichener"}
+#' \item \code{"sokalsneath"}
+#' \item \code{"spearmanr"}
+#' \item \code{"symmetrickl"}
+#' \item \code{"tsss"}
+#' \item \code{"yule"}
+#' }
+#' For more details see the package documentation of \code{rnndescent}.
+#' For \code{nn_method = "fnn"}, the distance metric is always "euclidean".
+#'
+#' If \code{X} is a data frame or matrix, then multiple metrics can be
+#' specified, by passing a list to this argument, where the name of each item in
+#' the list is one of the metric names above. The value of each list item should
+#' be a vector giving the names or integer ids of the columns to be included in
+#' a calculation, e.g. \code{metric = list(euclidean = 1:4, manhattan = 5:10)}.
+#'
+#' Each metric calculation results in a separate fuzzy simplicial set, which are
+#' intersected together to produce the final set. Metric names can be repeated.
+#' Because non-numeric columns are removed from the data frame, it is safer to
+#' use column names than integer ids.
+#'
+#' Factor columns can also be used by specifying the metric name
+#' \code{"categorical"}. Factor columns are treated different from numeric
+#' columns and although multiple factor columns can be specified in a vector,
+#' each factor column specified is processed individually. If you specify
+#' a non-factor column, it will be coerced to a factor.
+#'
+#' For a given data block, you may override the \code{pca} and \code{pca_center}
+#' arguments for that block, by providing a list with one unnamed item
+#' containing the column names or ids, and then any of the \code{pca} or
+#' \code{pca_center} overrides as named items, e.g. \code{metric =
+#' list(euclidean = 1:4, manhattan = list(5:10, pca_center = FALSE))}. This
+#' exists to allow mixed binary and real-valued data to be included and to have
+#' PCA applied to both, but with centering applied only to the real-valued data
+#' (it is typical not to apply centering to binary data before PCA is applied).
+#' @param n_epochs Number of epochs to use during the optimization of the
+#'   embedded coordinates. The default is calculate the number of epochs
+#'   dynamically based on dataset size, to give the same number of edge samples
+#'   as the LargeVis defaults. This is usually substantially larger than the
+#'   UMAP defaults. If \code{n_epochs = 0}, then coordinates determined by
+#'   \code{"init"} will be returned.
+#' @param learning_rate Initial learning rate used in optimization of the
+#'   coordinates.
+#' @param scale Scaling to apply to \code{X} if it is a data frame or matrix:
+#' \itemize{
+#'   \item{\code{"none"} or \code{FALSE} or \code{NULL}} No scaling.
+#'   \item{\code{"Z"} or \code{"scale"} or \code{TRUE}} Scale each column to
+#'   zero mean and variance 1.
+#'   \item{\code{"maxabs"}} Center each column to mean 0, then divide each
+#'   element by the maximum absolute value over the entire matrix.
+#'   \item{\code{"range"}} Range scale the entire matrix, so the smallest
+#'   element is 0 and the largest is 1.
+#'   \item{\code{"colrange"}} Scale each column in the range (0,1).
+#' }
+#' For lvish, the default is \code{"maxabs"}, for consistency with LargeVis.
+#' @param init Type of initialization for the coordinates. Options are:
+#'   \itemize{
+#'     \item \code{"spectral"} Spectral embedding using the normalized Laplacian
+#'     of the fuzzy 1-skeleton, with Gaussian noise added.
+#'     \item \code{"normlaplacian"}. Spectral embedding using the normalized
+#'     Laplacian of the fuzzy 1-skeleton, without noise.
+#'     \item \code{"random"}. Coordinates assigned using a uniform random
+#'     distribution between -10 and 10.
+#'     \item \code{"lvrandom"}. Coordinates assigned using a Gaussian
+#'     distribution with standard deviation 1e-4, as used in LargeVis
+#'     (Tang et al., 2016) and t-SNE.
+#'     \item \code{"laplacian"}. Spectral embedding using the Laplacian Eigenmap
+#'     (Belkin and Niyogi, 2002).
+#'     \item \code{"pca"}. The first two principal components from PCA of
+#'     \code{X} if \code{X} is a data frame, and from a 2-dimensional classical
+#'     MDS if \code{X} is of class \code{"dist"}.
+#'     \item \code{"spca"}. Like \code{"pca"}, but each dimension is then scaled
+#'     so the standard deviation is 1e-4, to give a distribution similar to that
+#'     used in t-SNE and LargeVis. This is an alias for \code{init = "pca",
+#'     init_sdev = 1e-4}.
+#'     \item \code{"agspectral"} An "approximate global" modification of
+#'     \code{"spectral"} which all edges in the graph to a value of 1, and then
+#'     sets a random number of edges (\code{negative_sample_rate} edges per
+#'     vertex) to 0.1, to approximate the effect of non-local affinities.
+#'     \item A matrix of initial coordinates.
+#'   }
+#'  For spectral initializations, (\code{"spectral"}, \code{"normlaplacian"},
+#'  \code{"laplacian"}, \code{"agspectral"}), if more than one connected
+#'  component is identified, no spectral initialization is attempted. Instead
+#'  a PCA-based initialization is attempted. If \code{verbose = TRUE} the
+#'  number of connected components are logged to the console. The existence of
+#'  multiple connected components implies that a global view of the data cannot
+#'  be attained with this initialization. Increasing the value of
+#'  \code{n_neighbors} may help.
+#' @param init_sdev If non-\code{NULL}, scales each dimension of the initialized
+#'   coordinates (including any user-supplied matrix) to this standard
+#'   deviation. By default no scaling is carried out, except when \code{init =
+#'   "spca"}, in which case the value is \code{0.0001}. Scaling the input may
+#'   help if the unscaled versions result in initial coordinates with large
+#'   inter-point distances or outliers. This usually results in small gradients
+#'   during optimization and very little progress being made to the layout.
+#'   Shrinking the initial embedding by rescaling can help under these
+#'   circumstances. Scaling the result of \code{init = "pca"} is usually
+#'   recommended and \code{init = "spca"} as an alias for \code{init = "pca",
+#'   init_sdev = 1e-4} but for the spectral initializations the scaled versions
+#'   usually aren't necessary unless you are using a large value of
+#'   \code{n_neighbors} (e.g. \code{n_neighbors = 150} or higher). For
+#'   compatibility with recent versions of the Python UMAP package, if you are
+#'   using \code{init = "spectral"}, then you should also set
+#'   \code{init_sdev = "range"}, which will range scale each of the columns
+#'   containing the initial data between 0-10. This is not set by default to
+#'   maintain backwards compatibility with previous versions of uwot.
+#' @param repulsion_strength Weighting applied to negative samples in low
+#'   dimensional embedding optimization. Values higher than one will result in
+#'   greater weight being given to negative samples.
+#' @param negative_sample_rate The number of negative edge/1-simplex samples to
+#'   use per positive edge/1-simplex sample in optimizing the low dimensional
+#'   embedding.
+#' @param nn_method Method for finding nearest neighbors. Options are:
+#'   \itemize{
+#'     \item \code{"fnn"}. Use exact nearest neighbors via the
+#'       \href{https://cran.r-project.org/package=FNN}{FNN} package.
+#'     \item \code{"annoy"} Use approximate nearest neighbors via the
+#'       \href{https://cran.r-project.org/package=RcppAnnoy}{RcppAnnoy} package.
+#'     \item \code{"hnsw"} Use approximate nearest neighbors with the
+#'       Hierarchical Navigable Small World (HNSW) method (Malkov and Yashunin,
+#'       2018) via the
+#'       \href{https://cran.r-project.org/package=RcppHNSW}{RcppHNSW} package.
+#'       \code{RcppHNSW} is not a dependency of this package: this option is
+#'       only available if you have installed \code{RcppHNSW} yourself. Also,
+#'       HNSW only supports the following arguments for \code{metric}:
+#'       \code{"euclidean"}, \code{"cosine"} and \code{"correlation"}.
+#'     \item \code{"nndescent"} Use approximate nearest neighbors with the
+#'       Nearest Neighbor Descent method (Dong et al., 2011) via the
+#'       \href{https://cran.r-project.org/package=rnndescent}{rnndescent}
+#'       package. \code{rnndescent} is not a dependency of this package: this
+#'       option is only available if you have installed \code{rnndescent}
+#'       yourself.
+#'    }
+#'   By default, if \code{X} has less than 4,096 vertices, the exact nearest
+#'   neighbors are found. Otherwise, approximate nearest neighbors are used.
+#'   You may also pass precalculated nearest neighbor data to this argument. It
+#'   must be a list consisting of two elements:
+#'   \itemize{
+#'     \item \code{"idx"} (or \code{"index"}). A \code{n_vertices x n_neighbors}
+#'     matrix containing the integer indexes of the nearest neighbors in
+#'     \code{X}.
+#'     \emph{Each vertex is considered to be its own nearest neighbor, i.e.
+#'     \code{idx[, 1] == 1:n_vertices}}.
+#'     \item \code{"dist"} (or \code{"distance"}). A
+#'     \code{n_vertices x n_neighbors} matrix containing the distances of the
+#'     nearest neighbors.
+#'   }
+#'   Multiple nearest neighbor data (e.g. from two different precomputed
+#'   metrics) can be passed by passing a list containing the nearest neighbor
+#'   data lists as items.
+#'   The \code{n_neighbors} parameter is ignored when using precomputed
+#'   nearest neighbor data.
+#' @param n_trees Number of trees to build when constructing the nearest
+#'   neighbor index. The more trees specified, the larger the index, but the
+#'   better the results. With \code{search_k}, determines the accuracy of the
+#'   Annoy nearest neighbor search. Only used if the \code{nn_method} is
+#'   \code{"annoy"}. Sensible values are between \code{10} to \code{100}.
+#' @param search_k Number of nodes to search during the neighbor retrieval. The
+#'   larger k, the more the accurate results, but the longer the search takes.
+#'   With \code{n_trees}, determines the accuracy of the Annoy nearest neighbor
+#'   search. Only used if the \code{nn_method} is \code{"annoy"}.
+#' @param nn_args A list containing additional arguments to pass to the nearest
+#'   neighbor method. For \code{nn_method = "annoy"}, you can specify
+#'   \code{"n_trees"} and \code{"search_k"}, and these will override the
+#'   \code{n_trees} and \code{search_k} parameters.
+#'   For \code{nn_method = "hnsw"}, you may specify the following arguments:
+#'   \itemize{
+#'   \item \code{M} The maximum number of neighbors to keep for each vertex.
+#'   Reasonable values are \code{2} to \code{100}. Higher values give better
+#'   recall at the cost of more memory. Default value is \code{16}.
+#'   \item \code{ef_construction} A positive integer specifying the size of
+#'   the dynamic list used during index construction. A higher value will
+#'   provide better results at the cost of a longer time to build the index.
+#'   Default is \code{200}.
+#'   \item \code{ef} A positive integer specifying the size of the dynamic
+#'   list used during search. This cannot be smaller than \code{n_neighbors}
+#'   and cannot be higher than the number of items in the index. Default is
+#'   \code{10}.
+#'   }
+#'   For \code{nn_method = "nndescent"}, you may specify the following
+#'   arguments:
+#'   \itemize{
+#'   \item \code{n_trees} The number of trees to use in a random projection
+#'   forest to initialize the search. A larger number will give more accurate
+#'   results at the cost of a longer computation time. The default of
+#'   \code{NULL} means that the number is chosen based on the number of
+#'   observations in \code{X}.
+#'   \item \code{max_candidates} The number of potential neighbors to explore
+#'   per iteration. By default, this is set to \code{n_neighbors} or \code{60},
+#'   whichever is smaller. A larger number will give more accurate results at
+#'   the cost of a longer computation time.
+#'   \item \code{n_iters} The number of iterations to run the search. A larger
+#'   number will give more accurate results at the cost of a longer computation
+#'   time. By default, this will be chosen based on the number of observations
+#'   in \code{X}. You may also need to modify the convergence criterion
+#'   \code{delta}.
+#'   \item \code{delta} The minimum relative change in the neighbor graph
+#'   allowed before early stopping. Should be a value between 0 and 1. The
+#'   smaller the value, the smaller the amount of progress between iterations is
+#'   allowed. Default value of \code{0.001} means that at least 0.1% of the
+#'   neighbor graph must be updated at each iteration.
+#'   \item \code{init} How to initialize the nearest neighbor descent. By
+#'   default this is set to \code{"tree"} and uses a random project forest.
+#'   If you set this to \code{"rand"}, then a random selection is used. Usually
+#'   this is less accurate than using RP trees, but for high-dimensional cases,
+#'   there may be little difference in the quality of the initialization and
+#'   random initialization will be a lot faster. If you set this to
+#'   \code{"rand"}, then the \code{n_trees} parameter is ignored.
+#'   }
+#' @param n_threads Number of threads to use (except during stochastic gradient
+#'   descent). Default is half the number of concurrent threads supported by the
+#'   system. For nearest neighbor search, this controls the search phase. For
+#'   \code{nn_method = "annoy"}, if \code{n_threads > 1}, then the Annoy index
+#'   will be temporarily written to disk in the location determined by
+#'   \code{\link[base]{tempfile}}.
+#' @param n_build_threads Number of threads to use when building nearest
+#'   neighbor indexes. Default is \code{NULL}, which uses \code{n_threads}. To
+#'   improve determinism, use \code{n_build_threads = 1}. Only
+#'   applies for \code{nn_method = "hnsw"} or \code{nn_method = "nndescent"}.
+#'   The Annoy-based index always use a single thread.
+#' @param n_sgd_threads Number of threads to use during stochastic gradient
+#'   descent. If set to > 1, then be aware that if \code{batch = FALSE}, results
+#'   will \emph{not} be reproducible, even if \code{set.seed} is called with a
+#'   fixed seed before running. Set to \code{"auto"} to use the same value as
+#'   \code{n_threads}.
+#' @param grain_size The minimum amount of work to do on each thread. If this
+#'   value is set high enough, then less than \code{n_threads} or
+#'   \code{n_sgd_threads} will be used for processing, which might give a
+#'   performance improvement if the overhead of thread management and context
+#'   switching was outweighing the improvement due to concurrent processing.
+#'   This should be left at default (\code{1}) and work will be spread evenly
+#'   over all the threads specified.
+#' @param kernel Type of kernel function to create input probabilities. Can be
+#'   one of \code{"gauss"} (the default) or \code{"knn"}. \code{"gauss"} uses
+#'   the usual Gaussian weighted similarities. \code{"knn"} assigns equal
+#'   probabilities to every edge in the nearest neighbor graph, and zero
+#'   otherwise, using \code{perplexity} nearest neighbors. The \code{n_neighbors}
+#'   parameter is ignored in this case.
+#' @param pca If set to a positive integer value, reduce data to this number of
+#'   columns using PCA. Doesn't applied if the distance \code{metric} is
+#'   \code{"hamming"}, or the dimensions of the data is larger than the
+#'   number specified (i.e. number of rows and columns must be larger than the
+#'   value of this parameter). If you have > 100 columns in a data frame or
+#'   matrix, reducing the number of columns in this way may substantially
+#'   increase the performance of the nearest neighbor search at the cost of a
+#'   potential decrease in accuracy. In many t-SNE applications, a value of 50
+#'   is recommended, although there's no guarantee that this is appropriate for
+#'   all settings.
+#' @param pca_center If \code{TRUE}, center the columns of \code{X} before
+#'   carrying out PCA. For binary data, it's recommended to set this to
+#'   \code{FALSE}.
+#' @param pca_method Method to carry out any PCA dimensionality reduction when
+#'   the \code{pca} parameter is specified. Allowed values are:
+#'   \itemize{
+#'     \item{\code{"irlba"}}. Uses \code{\link[irlba]{prcomp_irlba}} from the
+#'     \href{https://cran.r-project.org/package=irlba}{irlba} package.
+#'     \item{\code{"rsvd"}}. Uses 5 iterations of \code{\link[irlba]{svdr}} from
+#'     the \href{https://cran.r-project.org/package=irlba}{irlba} package.
+#'     This is likely to give much faster but potentially less accurate results
+#'     than using \code{"irlba"}. For the purposes of nearest neighbor
+#'     calculation and coordinates initialization, any loss of accuracy doesn't
+#'     seem to matter much.
+#'     \item{\code{"bigstatsr"}}. Uses \code{\link[bigstatsr]{big_randomSVD}}
+#'     from the \href{https://cran.r-project.org/package=bigstatsr}{bigstatsr}
+#'     package. The SVD methods used in \code{bigstatsr} may be faster on
+#'     systems without access to efficient linear algebra libraries (e.g.
+#'     Windows). \strong{Note}: \code{bigstatsr} is \emph{not} a dependency of
+#'     uwot: if you choose to use this package for PCA, you \emph{must} install
+#'     it yourself.
+#'     \item{\code{"svd"}}. Uses \code{\link[base]{svd}} for the SVD. This is
+#'     likely to be slow for all but the smallest datasets.
+#'     \item{\code{"auto"}} (the default). Uses \code{"irlba"}, unless more than
+#'     50% of the full set of singular vectors would be calculated, in which
+#'     case \code{"svd"} is used.
+#'   }
+#' @param pcg_rand If \code{TRUE}, use the PCG random number generator (O'Neill,
+#'   2014) during optimization. Otherwise, use the faster (but probably less
+#'   statistically good) Tausworthe "taus88" generator. The default is
+#'   \code{TRUE}. This parameter has been superseded by \code{rng_type} -- if
+#'   both are set, \code{rng_type} takes precedence.
+#' @param rng_type The type of random number generator to use during
+#'   optimization. One of:
+#'   \itemize{
+#'    \item{\code{"pcg"}}. Use the PCG random number generator (O'Neill, 2014).
+#'    \item{\code{"tausworthe"}}. Use the Tausworthe "taus88" generator.
+#'    \item{\code{"deterministic"}}. Use a deterministic number generator. This
+#'    isn't actually random, but may provide enough variation in the negative
+#'    sampling to give a good embedding and can provide a noticeable speed-up.
+#'   }
+#'   For backwards compatibility, by default this is unset and the choice of
+#'   \code{pcg_rand} is used (making "pcg" the effective default).
+#' @param fast_sgd If \code{TRUE}, then the following combination of parameters
+#'   is set: \code{pcg_rand = TRUE} and \code{n_sgd_threads = "auto"}. The
+#'   default is \code{FALSE}. Setting this to \code{TRUE} will speed up the
+#'   stochastic optimization phase, but give a potentially less accurate
+#'   embedding, and which will not be exactly reproducible even with a fixed
+#'   seed. For visualization, \code{fast_sgd = TRUE} will give perfectly good
+#'   results. For more generic dimensionality reduction, it's safer to leave
+#'   \code{fast_sgd = FALSE}. If \code{fast_sgd = TRUE}, then user-supplied
+#'   values of \code{pcg_rand} and \code{n_sgd_threads}, are ignored.
+#' @param batch If \code{TRUE}, then embedding coordinates are updated at the
+#'   end of each epoch rather than during the epoch. In batch mode, results are
+#'   reproducible with a fixed random seed even with \code{n_sgd_threads > 1},
+#'   at the cost of a slightly higher memory use. You may also have to modify
+#'   \code{learning_rate} and increase \code{n_epochs}, so whether this provides
+#'   a speed increase over the single-threaded optimization is likely to be
+#'   dataset and hardware-dependent.
+#' @param ret_nn If \code{TRUE}, then in addition to the embedding, also return
+#'   nearest neighbor data that can be used as input to \code{nn_method} to
+#'   avoid the overhead of repeatedly calculating the nearest neighbors when
+#'   manipulating unrelated parameters (e.g. \code{min_dist}, \code{n_epochs},
+#'   \code{init}). See the "Value" section for the names of the list items. If
+#'   \code{FALSE}, just return the coordinates. Note that the nearest neighbors
+#'   could be sensitive to data scaling, so be wary of reusing nearest neighbor
+#'   data if modifying the \code{scale} parameter.
+#' @param ret_extra A vector indicating what extra data to return. May contain
+#'   any combination of the following strings:
+#'   \itemize{
+#'     \item \code{"nn"} same as setting \code{ret_nn = TRUE}.
+#'     \item \code{"P"} the high dimensional probability matrix. The graph
+#'       is returned as a sparse symmetric N x N matrix of class
+#'       \link[Matrix]{dgCMatrix-class}, where a non-zero entry (i, j) gives the
+#'       input probability (or similarity or affinity) of the edge connecting
+#'       vertex i and vertex j. Note that the graph is further sparsified by
+#'       removing edges with sufficiently low membership strength that they
+#'       would not be sampled by the probabilistic edge sampling employed for
+#'       optimization and therefore the number of non-zero elements in the
+#'       matrix is dependent on \code{n_epochs}. If you are only interested in
+#'       the fuzzy input graph (e.g. for clustering), setting
+#'       \code{n_epochs = 0} will avoid any further sparsifying. Be aware that
+#'       setting \code{binary_edge_weights = TRUE} will affect this graph (all
+#'       non-zero edge weights will be 1).
+#'    \item \code{sigma} a vector of the bandwidths used to calibrate the input
+#'       Gaussians to reproduce the target \code{"perplexity"}.
+#'   }
+#' @param tmpdir Temporary directory to store nearest neighbor indexes during
+#'   nearest neighbor search. Default is \code{\link{tempdir}}. The index is
+#'   only written to disk if \code{n_threads > 1} and
+#'   \code{nn_method = "annoy"}; otherwise, this parameter is ignored.
+#' @param verbose If \code{TRUE}, log details to the console.
+#' @param opt_args A list of optimizer parameters, used when
+#'   \code{batch = TRUE}. The default optimization method used is Adam (Kingma
+#'   and Ba, 2014).
+#'   \itemize{
+#'     \item \code{method} The optimization method to use. Either \code{"adam"}
+#'     or \code{"sgd"} (stochastic gradient descent). Default: \code{"adam"}.
+#'     \item \code{beta1} (Adam only). The weighting parameter for the
+#'     exponential moving average of the first moment estimator. Effectively the
+#'     momentum parameter. Should be a floating point value between 0 and 1.
+#'     Higher values can smooth oscillatory updates in poorly-conditioned
+#'     situations and may allow for a larger \code{learning_rate} to be
+#'     specified, but too high can cause divergence. Default: \code{0.5}.
+#'     \item \code{beta2} (Adam only). The weighting parameter for the
+#'     exponential moving average of the uncentered second moment estimator.
+#'     Should be a floating point value between 0 and 1. Controls the degree of
+#'     adaptivity in the step-size. Higher values put more weight on previous
+#'     time steps. Default: \code{0.9}.
+#'     \item \code{eps} (Adam only). Intended to be a small value to prevent
+#'     division by zero, but in practice can also affect convergence due to its
+#'     interaction with \code{beta2}. Higher values reduce the effect of the
+#'     step-size adaptivity and bring the behavior closer to stochastic gradient
+#'     descent with momentum. Typical values are between 1e-8 and 1e-3. Default:
+#'     \code{1e-7}.
+#'     \item \code{alpha} The initial learning rate. Default: the value of the
+#'     \code{learning_rate} parameter.
+#'   }
+#' @param epoch_callback A function which will be invoked at the end of every
+#'   epoch. Its signature should be: \code{(epoch, n_epochs, coords)}, where:
+#'   \itemize{
+#'     \item \code{epoch} The current epoch number (between \code{1} and
+#'     \code{n_epochs}).
+#'     \item \code{n_epochs} Number of epochs to use during the optimization of
+#'     the embedded coordinates.
+#'     \item \code{coords} The embedded coordinates as of the end of the current
+#'     epoch, as a matrix with dimensions (N, \code{n_components}).
+#'   }
+#' @param binary_edge_weights If \code{TRUE} then edge weights in the input
+#'   graph are treated as binary (0/1) rather than real valued. This affects the
+#'   sampling frequency of neighbors and is the strategy used by the PaCMAP
+#'   method (Wang and co-workers, 2020). Practical (Böhm and co-workers, 2020)
+#'   and theoretical (Damrich and Hamprecht, 2021) work suggests this has little
+#'   effect on UMAP's performance.
+#' @return A matrix of optimized coordinates, or:
+#'   \itemize{
+#'     \item if \code{ret_nn = TRUE} (or \code{ret_extra} contains \code{"nn"}),
+#'     returns the nearest neighbor data as a list called \code{nn}. This
+#'     contains one list for each \code{metric} calculated, itself containing a
+#'     matrix \code{idx} with the integer ids of the neighbors; and a matrix
+#'     \code{dist} with the distances. The \code{nn} list (or a sub-list) can be
+#'     used as input to the \code{nn_method} parameter.
+#'     \item if \code{ret_extra} contains \code{"P"}, returns the high
+#'     dimensional probability matrix as a sparse matrix called \code{P}, of
+#'     type \link[Matrix]{dgCMatrix-class}.
+#'     \item if \code{ret_extra} contains \code{"sigma"}, returns a vector of
+#'     the high dimensional gaussian bandwidths for each point, and
+#'     \code{"dint"} a vector of estimates of the intrinsic dimensionality at
+#'     each point, based on the method given by Lee and co-workers (2015).
+#'   }
+#'   The returned list contains the combined data from any combination of
+#'   specifying \code{ret_nn} and \code{ret_extra}.
+#'
+#' @examples
+#' # Default number of epochs is much larger than for UMAP, assumes random
+#' # initialization. Use perplexity rather than n_neighbors to control the size
+#' # of the local neighborhood 20 epochs may be too small for a random
+#' # initialization
+#' iris_lvish <- lvish(iris,
+#'   perplexity = 50, learning_rate = 0.5,
+#'   init = "random", n_epochs = 20
+#' )
+#'
+#' @references
+#' Belkin, M., & Niyogi, P. (2002).
+#' Laplacian eigenmaps and spectral techniques for embedding and clustering.
+#' In \emph{Advances in neural information processing systems}
+#' (pp. 585-591).
+#' \url{http://papers.nips.cc/paper/1961-laplacian-eigenmaps-and-spectral-techniques-for-embedding-and-clustering.pdf}
+#'
+#' Böhm, J. N., Berens, P., & Kobak, D. (2020).
+#' A unifying perspective on neighbor embeddings along the attraction-repulsion spectrum.
+#' \emph{arXiv preprint} \emph{arXiv:2007.08902}.
+#' \url{https://arxiv.org/abs/2007.08902}
+#'
+#' Damrich, S., & Hamprecht, F. A. (2021).
+#' On UMAP's true loss function.
+#' \emph{Advances in Neural Information Processing Systems}, \emph{34}.
+#' \url{https://proceedings.neurips.cc/paper/2021/hash/2de5d16682c3c35007e4e92982f1a2ba-Abstract.html}
+#'
+#' Dong, W., Moses, C., & Li, K. (2011, March).
+#' Efficient k-nearest neighbor graph construction for generic similarity measures.
+#' In \emph{Proceedings of the 20th international conference on World Wide Web}
+#' (pp. 577-586).
+#' ACM.
+#' \doi{10.1145/1963405.1963487}.
+#'
+#' Kingma, D. P., & Ba, J. (2014).
+#' Adam: A method for stochastic optimization.
+#' \emph{arXiv preprint} \emph{arXiv}:1412.6980.
+#' \url{https://arxiv.org/abs/1412.6980}
+#'
+#' Lee, J. A., Peluffo-Ordóñez, D. H., & Verleysen, M. (2015).
+#' Multi-scale similarities in stochastic neighbour embedding: Reducing
+#' dimensionality while preserving both local and global structure.
+#' \emph{Neurocomputing}, \emph{169}, 246-261.
+#'
+#' Malkov, Y. A., & Yashunin, D. A. (2018).
+#' Efficient and robust approximate nearest neighbor search using hierarchical
+#' navigable small world graphs.
+#' \emph{IEEE transactions on pattern analysis and machine intelligence}, \emph{42}(4), 824-836.
+#'
+#' McInnes, L., Healy, J., & Melville, J. (2018).
+#' UMAP: Uniform Manifold Approximation and Projection for Dimension Reduction
+#' \emph{arXiv preprint} \emph{arXiv}:1802.03426.
+#' \url{https://arxiv.org/abs/1802.03426}
+#'
+#' O'Neill, M. E. (2014).
+#' \emph{PCG: A family of simple fast space-efficient statistically good
+#' algorithms for random number generation}
+#' (Report No. HMC-CS-2014-0905). Harvey Mudd College.
+#'
+#' Tang, J., Liu, J., Zhang, M., & Mei, Q. (2016, April).
+#' Visualizing large-scale and high-dimensional data.
+#' In \emph{Proceedings of the 25th International Conference on World Wide Web}
+#' (pp. 287-297).
+#' International World Wide Web Conferences Steering Committee.
+#' \url{https://arxiv.org/abs/1602.00370}
+#'
+#' Van der Maaten, L., & Hinton, G. (2008).
+#' Visualizing data using t-SNE.
+#' \emph{Journal of Machine Learning Research}, \emph{9} (2579-2605).
+#' \url{https://www.jmlr.org/papers/v9/vandermaaten08a.html}
+#'
+#' Wang, Y., Huang, H., Rudin, C., & Shaposhnik, Y. (2021).
+#' Understanding How Dimension Reduction Tools Work: An Empirical Approach to Deciphering t-SNE, UMAP, TriMap, and PaCMAP for Data Visualization.
+#' \emph{Journal of Machine Learning Research}, \emph{22}(201), 1-73.
+#' \url{https://www.jmlr.org/papers/v22/20-1061.html}
+#'
+#' @export
+lvish <- function(X, perplexity = 50, n_neighbors = perplexity * 3,
+                  n_components = 2, metric = "euclidean", n_epochs = -1,
+                  learning_rate = 1, scale = "maxabs",
+                  init = "lvrandom", init_sdev = NULL,
+                  repulsion_strength = 7,
+                  negative_sample_rate = 5.0,
+                  nn_method = NULL, n_trees = 50,
+                  search_k = 2 * n_neighbors * n_trees,
+                  n_threads = NULL,
+                  n_build_threads = NULL,
+                  n_sgd_threads = 0,
+                  grain_size = 1,
+                  kernel = "gauss",
+                  pca = NULL, pca_center = TRUE,
+                  pcg_rand = TRUE,
+                  fast_sgd = FALSE,
+                  ret_nn = FALSE, ret_extra = c(),
+                  tmpdir = tempdir(),
+                  verbose = getOption("verbose", TRUE),
+                  batch = FALSE,
+                  opt_args = NULL, epoch_callback = NULL,
+                  pca_method = NULL,
+                  binary_edge_weights = FALSE,
+                  nn_args = list(),
+                  rng_type = NULL) {
+  uwot(X,
+    n_neighbors = n_neighbors, n_components = n_components,
+    metric = metric,
+    n_epochs = n_epochs, alpha = learning_rate, scale = scale,
+    init = init, init_sdev = init_sdev,
+    gamma = repulsion_strength, negative_sample_rate = negative_sample_rate,
+    nn_method = nn_method,
+    n_trees = n_trees, search_k = search_k,
+    method = "largevis", perplexity = perplexity,
+    pca = pca, pca_center = pca_center, pca_method = pca_method,
+    n_threads = n_threads, n_build_threads = n_build_threads,
+    n_sgd_threads = n_sgd_threads,
+    grain_size = grain_size,
+    kernel = kernel,
+    ret_nn = ret_nn || "nn" %in% ret_extra,
+    ret_fgraph = "P" %in% ret_extra,
+    ret_sigma = "sigma" %in% ret_extra,
+    pcg_rand = pcg_rand,
+    fast_sgd = fast_sgd,
+    batch = batch,
+    opt_args = opt_args,
+    epoch_callback = epoch_callback,
+    tmpdir = tmpdir,
+    binary_edge_weights = binary_edge_weights,
+    verbose = verbose,
+    nn_args = list(),
+    rng_type = rng_type
+  )
+}
+
+#' Similarity Graph
+#'
+#' Create a graph (as a sparse symmetric weighted adjacency matrix) representing
+#' the similarities between items in a data set. No dimensionality reduction is
+#' carried out. By default, the similarities are calculated using the merged
+#' fuzzy simplicial set approach in the Uniform Manifold Approximation and
+#' Projection (UMAP) method (McInnes et al., 2018), but the approach from
+#' LargeVis (Tang et al., 2016) can also be used.
+#'
+#' This is equivalent to running \code{\link{umap}} with the
+#' \code{ret_extra = c("fgraph")} parameter, but without the overhead of
+#' calculating (or returning) the optimized low-dimensional coordinates.
+#'
+#' @param X Input data. Can be a \code{\link{data.frame}}, \code{\link{matrix}},
+#'   \code{\link[stats]{dist}} object or \code{\link[Matrix]{sparseMatrix}}.
+#'   Matrix and data frames should contain one observation per row. Data frames
+#'   will have any non-numeric columns removed, although factor columns will be
+#'   used if explicitly included via \code{metric} (see the help for
+#'   \code{metric} for details). A sparse matrix is interpreted as a distance
+#'   matrix, and is assumed to be symmetric, so you can also pass in an
+#'   explicitly upper or lower triangular sparse matrix to save storage. There
+#'   must be at least \code{n_neighbors} non-zero distances for each row. Both
+#'   implicit and explicit zero entries are ignored. Set zero distances you want
+#'   to keep to an arbitrarily small non-zero value (e.g. \code{1e-10}).
+#'   \code{X} can also be \code{NULL} if pre-computed nearest neighbor data is
+#'   passed to \code{nn_method}.
+#' @param n_neighbors The size of local neighborhood (in terms of number of
+#'   neighboring sample points) used for manifold approximation. Larger values
+#'   result in more global views of the manifold, while smaller values result in
+#'   more local data being preserved. In general values should be in the range
+#'   \code{2} to \code{100}.
+#' @param metric Type of distance metric to use to find nearest neighbors. For
+#'  \code{nn_method = "annoy"} this can be one of:
+#' \itemize{
+#'   \item \code{"euclidean"} (the default)
+#'   \item \code{"cosine"}
+#'   \item \code{"manhattan"}
+#'   \item \code{"hamming"}
+#'   \item \code{"correlation"} (a distance based on the Pearson correlation)
+#'   \item \code{"categorical"} (see below)
+#' }
+#' For \code{nn_method = "hnsw"} this can be one of:
+#' \itemize{
+#'   \item \code{"euclidean"}
+#'   \item \code{"cosine"}
+#'   \item \code{"correlation"}
+#' }
+#' If \href{https://cran.r-project.org/package=rnndescent}{rnndescent} is
+#' installed and \code{nn_method = "nndescent"} is specified then many more
+#' metrics are avaiable, including:
+#' \itemize{
+#' \item \code{"braycurtis"}
+#' \item \code{"canberra"}
+#' \item \code{"chebyshev"}
+#' \item \code{"dice"}
+#' \item \code{"hamming"}
+#' \item \code{"hellinger"}
+#' \item \code{"jaccard"}
+#' \item \code{"jensenshannon"}
+#' \item \code{"kulsinski"}
+#' \item \code{"rogerstanimoto"}
+#' \item \code{"russellrao"}
+#' \item \code{"sokalmichener"}
+#' \item \code{"sokalsneath"}
+#' \item \code{"spearmanr"}
+#' \item \code{"symmetrickl"}
+#' \item \code{"tsss"}
+#' \item \code{"yule"}
+#' }
+#' For more details see the package documentation of \code{rnndescent}.
+#' For \code{nn_method = "fnn"}, the distance metric is always "euclidean".
+#'
+#' If \code{X} is a data frame or matrix, then multiple metrics can be
+#' specified, by passing a list to this argument, where the name of each item in
+#' the list is one of the metric names above. The value of each list item should
+#' be a vector giving the names or integer ids of the columns to be included in
+#' a calculation, e.g. \code{metric = list(euclidean = 1:4, manhattan = 5:10)}.
+#'
+#' Each metric calculation results in a separate fuzzy simplicial set, which are
+#' intersected together to produce the final set. Metric names can be repeated.
+#' Because non-numeric columns are removed from the data frame, it is safer to
+#' use column names than integer ids.
+#'
+#' Factor columns can also be used by specifying the metric name
+#' \code{"categorical"}. Factor columns are treated different from numeric
+#' columns and although multiple factor columns can be specified in a vector,
+#' each factor column specified is processed individually. If you specify
+#' a non-factor column, it will be coerced to a factor.
+#'
+#' For a given data block, you may override the \code{pca} and \code{pca_center}
+#' arguments for that block, by providing a list with one unnamed item
+#' containing the column names or ids, and then any of the \code{pca} or
+#' \code{pca_center} overrides as named items, e.g. \code{metric =
+#' list(euclidean = 1:4, manhattan = list(5:10, pca_center = FALSE))}. This
+#' exists to allow mixed binary and real-valued data to be included and to have
+#' PCA applied to both, but with centering applied only to the real-valued data
+#' (it is typical not to apply centering to binary data before PCA is applied).
+#' @param scale Scaling to apply to \code{X} if it is a data frame or matrix:
+#' \itemize{
+#'   \item{\code{"none"} or \code{FALSE} or \code{NULL}} No scaling.
+#'   \item{\code{"Z"} or \code{"scale"} or \code{TRUE}} Scale each column to
+#'   zero mean and variance 1.
+#'   \item{\code{"maxabs"}} Center each column to mean 0, then divide each
+#'   element by the maximum absolute value over the entire matrix.
+#'   \item{\code{"range"}} Range scale the entire matrix, so the smallest
+#'   element is 0 and the largest is 1.
+#'   \item{\code{"colrange"}} Scale each column in the range (0,1).
+#' }
+#' For \code{method} \code{"umap"}, the default is \code{"none"}. For
+#' \code{"largevis"}, the default is \code{"maxabs"}.
+#' @param set_op_mix_ratio Interpolate between (fuzzy) union and intersection as
+#'   the set operation used to combine local fuzzy simplicial sets to obtain a
+#'   global fuzzy simplicial sets. Both fuzzy set operations use the product
+#'   t-norm. The value of this parameter should be between \code{0.0} and
+#'   \code{1.0}; a value of \code{1.0} will use a pure fuzzy union, while
+#'   \code{0.0} will use a pure fuzzy intersection. Ignored if
+#'   \code{method = "largevis"}
+#' @param local_connectivity The local connectivity required -- i.e. the number
+#'   of nearest neighbors that should be assumed to be connected at a local
+#'   level. The higher this value the more connected the manifold becomes
+#'   locally. In practice this should be not more than the local intrinsic
+#'   dimension of the manifold. Ignored if \code{method = "largevis"}.
+#' @param nn_method Method for finding nearest neighbors. Options are:
+#'   \itemize{
+#'     \item \code{"fnn"}. Use exact nearest neighbors via the
+#'       \href{https://cran.r-project.org/package=FNN}{FNN} package.
+#'     \item \code{"annoy"} Use approximate nearest neighbors via the
+#'       \href{https://cran.r-project.org/package=RcppAnnoy}{RcppAnnoy} package.
+#'     \item \code{"hnsw"} Use approximate nearest neighbors with the
+#'       Hierarchical Navigable Small World (HNSW) method (Malkov and Yashunin,
+#'       2018) via the
+#'       \href{https://cran.r-project.org/package=RcppHNSW}{RcppHNSW} package.
+#'       \code{RcppHNSW} is not a dependency of this package: this option is
+#'       only available if you have installed \code{RcppHNSW} yourself. Also,
+#'       HNSW only supports the following arguments for \code{metric} and
+#'       \code{target_metric}: \code{"euclidean"}, \code{"cosine"} and
+#'       \code{"correlation"}.
+#'     \item \code{"nndescent"} Use approximate nearest neighbors with the
+#'       Nearest Neighbor Descent method (Dong et al., 2011) via the
+#'       \href{https://cran.r-project.org/package=rnndescent}{rnndescent}
+#'       package. \code{rnndescent} is not a dependency of this package: this
+#'       option is only available if you have installed \code{rnndescent}
+#'       yourself.
+#'    }
+#'   By default, if \code{X} has less than 4,096 vertices, the exact nearest
+#'   neighbors are found. Otherwise, approximate nearest neighbors are used.
+#'   You may also pass pre-calculated nearest neighbor data to this argument. It
+#'   must be one of two formats, either a list consisting of two elements:
+#'   \itemize{
+#'     \item \code{"idx"} (or \code{"index"}). A \code{n_vertices x n_neighbors}
+#'     matrix containing the integer indexes of the nearest neighbors in
+#'     \code{X}.
+#'     \emph{Each vertex is considered to be its own nearest neighbor, i.e.
+#'     \code{idx[, 1] == 1:n_vertices}}.
+#'     \item \code{"dist"} (or \code{"distance"}). A
+#'     \code{n_vertices x n_neighbors} matrix containing the distances of the
+#'     nearest neighbors.
+#'   }
+#'   or a sparse distance matrix of type \code{dgCMatrix}, with dimensions
+#'   \code{n_vertices x n_vertices}. Distances should be arranged by column,
+#'   i.e. a non-zero entry in row \code{j} of the \code{i}th column indicates
+#'   that the \code{j}th observation in \code{X} is a nearest neighbor of the
+#'   \code{i}th observation with the distance given by the value of that
+#'   element.
+#'   The \code{n_neighbors} parameter is ignored when using precomputed
+#'   nearest neighbor data. If using the sparse distance matrix input, each
+#'   column can contain a different number of neighbors.
+#' @param n_trees Number of trees to build when constructing the nearest
+#'   neighbor index. The more trees specified, the larger the index, but the
+#'   better the results. With \code{search_k}, determines the accuracy of the
+#'   Annoy nearest neighbor search. Only used if the \code{nn_method} is
+#'   \code{"annoy"}. Sensible values are between \code{10} to \code{100}.
+#' @param search_k Number of nodes to search during the neighbor retrieval. The
+#'   larger k, the more the accurate results, but the longer the search takes.
+#'   With \code{n_trees}, determines the accuracy of the Annoy nearest neighbor
+#'   search. Only used if the \code{nn_method} is \code{"annoy"}.
+#' @param nn_args A list containing additional arguments to pass to the nearest
+#'   neighbor method. For \code{nn_method = "annoy"}, you can specify
+#'   \code{"n_trees"} and \code{"search_k"}, and these will override the
+#'   \code{n_trees} and \code{search_k} parameters.
+#'   For \code{nn_method = "hnsw"}, you may specify the following arguments:
+#'   \itemize{
+#'   \item \code{M} The maximum number of neighbors to keep for each vertex.
+#'   Reasonable values are \code{2} to \code{100}. Higher values give better
+#'   recall at the cost of more memory. Default value is \code{16}.
+#'   \item \code{ef_construction} A positive integer specifying the size of
+#'   the dynamic list used during index construction. A higher value will
+#'   provide better results at the cost of a longer time to build the index.
+#'   Default is \code{200}.
+#'   \item \code{ef} A positive integer specifying the size of the dynamic
+#'   list used during search. This cannot be smaller than \code{n_neighbors}
+#'   and cannot be higher than the number of items in the index. Default is
+#'   \code{10}.
+#'   }
+#'   For \code{nn_method = "nndescent"}, you may specify the following
+#'   arguments:
+#'   \itemize{
+#'   \item \code{n_trees} The number of trees to use in a random projection
+#'   forest to initialize the search. A larger number will give more accurate
+#'   results at the cost of a longer computation time. The default of
+#'   \code{NULL} means that the number is chosen based on the number of
+#'   observations in \code{X}.
+#'   \item \code{max_candidates} The number of potential neighbors to explore
+#'   per iteration. By default, this is set to \code{n_neighbors} or \code{60},
+#'   whichever is smaller. A larger number will give more accurate results at
+#'   the cost of a longer computation time.
+#'   \item \code{n_iters} The number of iterations to run the search. A larger
+#'   number will give more accurate results at the cost of a longer computation
+#'   time. By default, this will be chosen based on the number of observations
+#'   in \code{X}. You may also need to modify the convergence criterion
+#'   \code{delta}.
+#'   \item \code{delta} The minimum relative change in the neighbor graph
+#'   allowed before early stopping. Should be a value between 0 and 1. The
+#'   smaller the value, the smaller the amount of progress between iterations is
+#'   allowed. Default value of \code{0.001} means that at least 0.1% of the
+#'   neighbor graph must be updated at each iteration.
+#'   \item \code{init} How to initialize the nearest neighbor descent. By
+#'   default this is set to \code{"tree"} and uses a random project forest.
+#'   If you set this to \code{"rand"}, then a random selection is used. Usually
+#'   this is less accurate than using RP trees, but for high-dimensional cases,
+#'   there may be little difference in the quality of the initialization and
+#'   random initialization will be a lot faster. If you set this to
+#'   \code{"rand"}, then the \code{n_trees} parameter is ignored.
+#'   \item \code{pruning_degree_multiplier} The maximum number of edges per node
+#'   to retain in the search graph, relative to \code{n_neighbors}. A larger
+#'   value will give more accurate results at the cost of a longer computation
+#'   time. Default is \code{1.5}. This parameter only affects neighbor search
+#'   when transforming new data with \code{\link{umap_transform}}.
+#'   \item \code{epsilon} Controls the degree of the back-tracking when
+#'   traversing the search graph. Setting this to \code{0.0} will do a greedy
+#'   search with no back-tracking. A larger value will give more accurate
+#'   results at the cost of a longer computation time. Default is \code{0.1}.
+#'   This parameter only affects neighbor search when transforming new data with
+#'   \code{\link{umap_transform}}.
+#'   \item \code{max_search_fraction} Specifies the maximum fraction of the
+#'   search graph to traverse. By default, this is set to \code{1.0}, so the
+#'   entire graph (i.e. all items in \code{X}) may be visited. You may want to
+#'   set this to a smaller value if you have a very large dataset (in
+#'   conjunction with \code{epsilon}) to avoid an inefficient exhaustive search
+#'   of the data in \code{X}. This parameter only affects neighbor search when
+#'   transforming new data with \code{\link{umap_transform}}.
+#'   }
+#' @param perplexity Used only if \code{method = "largevis"}. Controls the size
+#'   of the local neighborhood used for manifold approximation. Should be a
+#'   value between 1 and one less than the number of items in \code{X}. If
+#'   specified, you should \emph{not} specify a value for \code{n_neighbors}
+#'   unless you know what you are doing.
+#' @param kernel Used only if \code{method = "largevis"}. Type of kernel
+#'   function to create input similiarties. Can be one of \code{"gauss"} (the
+#'   default) or \code{"knn"}. \code{"gauss"} uses the usual Gaussian weighted
+#'   similarities. \code{"knn"} assigns equal similiarties. to every edge in the
+#'   nearest neighbor graph, and zero otherwise, using \code{perplexity} nearest
+#'   neighbors. The \code{n_neighbors} parameter is ignored in this case.
+#' @param method How to generate the similarities between items. One of:
+#'   \itemize{
+#'     \item \code{"umap"} The UMAP method of McInnes et al. (2018).
+#'     \item \code{"largevis"} The LargeVis method of Tang et al. (2016).
+#'   }
+#' @param y Optional target data to add supervised or semi-supervised weighting
+#'   to the similarity graph . Can be a vector, matrix or data frame. Use the
+#'   \code{target_metric} parameter to specify the metrics to use, using the
+#'   same syntax as \code{metric}. Usually either a single numeric or factor
+#'   column is used, but more complex formats are possible. The following types
+#'   are allowed:
+#'   \itemize{
+#'     \item Factor columns with the same length as \code{X}. \code{NA} is
+#'     allowed for any observation with an unknown level, in which case
+#'     UMAP operates as a form of semi-supervised learning. Each column is
+#'     treated separately.
+#'     \item Numeric data. \code{NA} is \emph{not} allowed in this case. Use the
+#'     parameter \code{target_n_neighbors} to set the number of neighbors used
+#'     with \code{y}. If unset, \code{n_neighbors} is used. Unlike factors,
+#'     numeric columns are grouped into one block unless \code{target_metric}
+#'     specifies otherwise. For example, if you wish columns \code{a} and
+#'     \code{b} to be treated separately, specify
+#'     \code{target_metric = list(euclidean = "a", euclidean = "b")}. Otherwise,
+#'     the data will be effectively treated as a matrix with two columns.
+#'     \item Nearest neighbor data, consisting of a list of two matrices,
+#'     \code{idx} and \code{dist}. These represent the precalculated nearest
+#'     neighbor indices and distances, respectively. This
+#'     is the same format as that expected for precalculated data in
+#'     \code{nn_method}. This format assumes that the underlying data was a
+#'     numeric vector. Any user-supplied value of the \code{target_n_neighbors}
+#'     parameter is ignored in this case, because the the number of columns in
+#'     the matrices is used for the value. Multiple nearest neighbor data using
+#'     different metrics can be supplied by passing a list of these lists.
+#'   }
+#' Unlike \code{X}, all factor columns included in \code{y} are automatically
+#' used. This parameter is ignored if \code{method = "largevis"}.
+#' @param target_n_neighbors Number of nearest neighbors to use to construct the
+#'   target simplicial set. Default value is \code{n_neighbors}. Applies only if
+#'   \code{y} is non-\code{NULL} and \code{numeric}.  This parameter is ignored
+#'   if \code{method = "largevis"}.
+#' @param target_metric The metric used to measure distance for \code{y} if
+#'   using supervised dimension reduction. Used only if \code{y} is numeric.
+#'   This parameter is ignored if \code{method = "largevis"}.
+#' @param target_weight Weighting factor between data topology and target
+#'   topology. A value of 0.0 weights entirely on data, a value of 1.0 weights
+#'   entirely on target. The default of 0.5 balances the weighting equally
+#'   between data and target. Only applies if \code{y} is non-\code{NULL}. This
+#'   parameter is ignored if \code{method = "largevis"}.
+#' @param pca If set to a positive integer value, reduce data to this number of
+#'   columns using PCA. Doesn't applied if the distance \code{metric} is
+#'   \code{"hamming"}, or the dimensions of the data is larger than the
+#'   number specified (i.e. number of rows and columns must be larger than the
+#'   value of this parameter). If you have > 100 columns in a data frame or
+#'   matrix, reducing the number of columns in this way may substantially
+#'   increase the performance of the nearest neighbor search at the cost of a
+#'   potential decrease in accuracy. In many t-SNE applications, a value of 50
+#'   is recommended, although there's no guarantee that this is appropriate for
+#'   all settings.
+#' @param pca_center If \code{TRUE}, center the columns of \code{X} before
+#'   carrying out PCA. For binary data, it's recommended to set this to
+#'   \code{FALSE}.
+#' @param pca_method Method to carry out any PCA dimensionality reduction when
+#'   the \code{pca} parameter is specified. Allowed values are:
+#'   \itemize{
+#'     \item{\code{"irlba"}}. Uses \code{\link[irlba]{prcomp_irlba}} from the
+#'     \href{https://cran.r-project.org/package=irlba}{irlba} package.
+#'     \item{\code{"rsvd"}}. Uses 5 iterations of \code{\link[irlba]{svdr}} from
+#'     the \href{https://cran.r-project.org/package=irlba}{irlba} package.
+#'     This is likely to give much faster but potentially less accurate results
+#'     than using \code{"irlba"}. For the purposes of nearest neighbor
+#'     calculation and coordinates initialization, any loss of accuracy doesn't
+#'     seem to matter much.
+#'     \item{\code{"bigstatsr"}}. Uses \code{\link[bigstatsr]{big_randomSVD}}
+#'     from the \href{https://cran.r-project.org/package=bigstatsr}{bigstatsr}
+#'     package. The SVD methods used in \code{bigstatsr} may be faster on
+#'     systems without access to efficient linear algebra libraries (e.g.
+#'     Windows). \strong{Note}: \code{bigstatsr} is \emph{not} a dependency of
+#'     uwot: if you choose to use this package for PCA, you \emph{must} install
+#'     it yourself.
+#'     \item{\code{"svd"}}. Uses \code{\link[base]{svd}} for the SVD. This is
+#'     likely to be slow for all but the smallest datasets.
+#'     \item{\code{"auto"}} (the default). Uses \code{"irlba"}, unless more than
+#'     50% of the full set of singular vectors would be calculated, in which
+#'     case \code{"svd"} is used.
+#'   }
+#' @param ret_extra A vector indicating what extra data to return. May contain
+#'   any combination of the following strings:
+#'   \itemize{
+#'    \item \code{"nn"} nearest neighbor data that can be used as input to
+#'       \code{nn_method} to avoid the overhead of repeatedly calculating the
+#'       nearest neighbors when manipulating unrelated parameters. See the
+#'       "Value" section for the names of the list items. Note that the nearest
+#'       neighbors could be sensitive to data scaling, so be wary of reusing
+#'       nearest neighbor data if modifying the \code{scale} parameter.
+#'    \item \code{"sigma"} the normalization value for each observation in the
+#'       dataset when constructing the smoothed distances to each of its
+#'       neighbors. This gives some sense of the local density of each
+#'       observation in the high dimensional space: higher values of
+#'       \code{sigma} indicate a higher dispersion or lower density.
+#'   }
+#' @param n_threads Number of threads to use. Default is half the number of
+#'   concurrent threads supported by the system. For nearest neighbor search,
+#'   this controls the search phase. For \code{nn_method = "annoy"}, if
+#'   \code{n_threads > 1}, then the Annoy index will be temporarily written to
+#'   disk in the location determined by \code{\link[base]{tempfile}}.
+#' @param n_build_threads Number of threads to use when building nearest
+#'   neighbor indexes. Default is \code{NULL}, which uses \code{n_threads}. To
+#'   improve determinism, use \code{n_build_threads = 1}. Only
+#'   applies for \code{nn_method = "hnsw"} or \code{nn_method = "nndescent"}.
+#'   The Annoy-based index always use a single thread.
+#' @param grain_size The minimum amount of work to do on each thread. If this
+#'   value is set high enough, then less than \code{n_threads} will be used for
+#'   processing, which might give a performance improvement if the overhead of
+#'   thread management and context switching was outweighing the improvement due
+#'   to concurrent processing. This should be left at default (\code{1}) and
+#'   work will be spread evenly over all the threads specified.
+#' @param tmpdir Temporary directory to store nearest neighbor indexes during
+#'   nearest neighbor search. Default is \code{\link{tempdir}}. The index is
+#'   only written to disk if \code{n_threads > 1} and
+#'   \code{nn_method = "annoy"}; otherwise, this parameter is ignored.
+#' @param verbose If \code{TRUE}, log details to the console.
+#' @param binary_edge_weights If \code{TRUE} then edge weights of the returned
+#'   graph are binary (0/1) rather than reflecting the degree of similarity.
+#' @return A sparse symmetrized matrix of the similarities between the items in
+#'   \code{X} or if \code{nn_method} contains pre-computed nearest neighbor
+#'   data, the items in \code{nn_method}. Because of the symmetrization, there
+#'   may be more non-zero items in each column than the specified value of
+#'   \code{n_neighbors} (or pre-computed neighbors in \code{nn_method}).
+#'   If \code{ret_extra} is specified then the return value will be a list
+#'   containing:
+#'   \itemize{
+#'     \item \code{similarity_graph} the similarity graph as a sparse matrix
+#'     as described above.
+#'     \item \code{nn} (if \code{ret_extra} contained \code{"nn"}) the nearest
+#'     neighbor data as a list called \code{nn}. This contains one list for each
+#'     \code{metric} calculated, itself containing a matrix \code{idx} with the
+#'     integer ids of the neighbors; and a matrix \code{dist} with the
+#'     distances. The \code{nn} list (or a sub-list) can be used as input to the
+#'     \code{nn_method} parameter.
+#'     \item \code{sigma} (if \code{ret_extra} contains \code{"sigma"}),
+#'     a vector of calibrated parameters, one for each item in the input data,
+#'     reflecting the local data density for that item. The exact definition of
+#'     the values depends on the choice of the \code{method} parameter.
+#'     \item \code{rho} (if \code{ret_extra} contains \code{"sigma"}), a
+#'     vector containing the largest distance to the locally connected neighbors
+#'     of each item in the input data. This will exist only if
+#'     \code{method = "umap"}.
+#'     \item \code{localr} (if \code{ret_extra} contains \code{"localr"}) a
+#'     vector of the estimated local radii, the sum of \code{"sigma"} and
+#'     \code{"rho"}. This will exist only if \code{method = "umap"}.
+#'   }
+#' @examples
+#'
+#' iris30 <- iris[c(1:10, 51:60, 101:110), ]
+#'
+#' # return a 30 x 30 sparse matrix with similarity data based on 10 nearest
+#' # neighbors per item
+#' iris30_sim_graph <- similarity_graph(iris30, n_neighbors = 10)
+#'
+#' # Default is to use the UMAP method of calculating similarities, but LargeVis
+#' # is also available: for that method, use perplexity instead of n_neighbors
+#' # to control neighborhood size. Use ret_extra = "nn" to return nearest
+#' # neighbor data as well as the similarity graph. Return value is a list
+#' # containing similarity_graph' and 'nn' items.
+#' iris30_lv_graph <- similarity_graph(iris30,
+#'   perplexity = 10,
+#'   method = "largevis", ret_extra = "nn"
+#' )
+#' # If you have the neighbor information you don't need the original data
+#' iris30_lv_graph_nn <- similarity_graph(
+#'   nn_method = iris30_lv_graph$nn,
+#'   perplexity = 10, method = "largevis"
+#' )
+#' all(iris30_lv_graph_nn == iris30_lv_graph$similarity_graph)
+#'
+#' @references
+#' Dong, W., Moses, C., & Li, K. (2011, March).
+#' Efficient k-nearest neighbor graph construction for generic similarity measures.
+#' In \emph{Proceedings of the 20th international conference on World Wide Web}
+#' (pp. 577-586).
+#' ACM.
+#' \doi{10.1145/1963405.1963487}.
+#'
+#' Malkov, Y. A., & Yashunin, D. A. (2018).
+#' Efficient and robust approximate nearest neighbor search using hierarchical
+#' navigable small world graphs.
+#' \emph{IEEE transactions on pattern analysis and machine intelligence}, \emph{42}(4), 824-836.
+#'
+#' McInnes, L., Healy, J., & Melville, J. (2018).
+#' UMAP: Uniform Manifold Approximation and Projection for Dimension Reduction
+#' \emph{arXiv preprint} \emph{arXiv}:1802.03426.
+#' \url{https://arxiv.org/abs/1802.03426}
+#'
+#' Tang, J., Liu, J., Zhang, M., & Mei, Q. (2016, April).
+#' Visualizing large-scale and high-dimensional data.
+#' In \emph{Proceedings of the 25th International Conference on World Wide Web}
+#' (pp. 287-297).
+#' International World Wide Web Conferences Steering Committee.
+#' \url{https://arxiv.org/abs/1602.00370}
+#'
+#' @export
+similarity_graph <- function(X = NULL, n_neighbors = NULL, metric = "euclidean",
+                             scale = NULL,
+                             set_op_mix_ratio = 1.0, local_connectivity = 1.0,
+                             nn_method = NULL, n_trees = 50,
+                             search_k = 2 * n_neighbors * n_trees,
+                             perplexity = 50,
+                             method = "umap",
+                             y = NULL, target_n_neighbors = n_neighbors,
+                             target_metric = "euclidean",
+                             target_weight = 0.5,
+                             pca = NULL, pca_center = TRUE,
+                             ret_extra = c(),
+                             n_threads = NULL,
+                             n_build_threads = NULL,
+                             grain_size = 1,
+                             kernel = "gauss",
+                             tmpdir = tempdir(),
+                             verbose = getOption("verbose", TRUE),
+                             pca_method = NULL,
+                             binary_edge_weights = FALSE,
+                             nn_args = list()) {
+  if (is.null(n_neighbors)) {
+    if (method == "largevis") {
+      n_neighbors <- perplexity * 3
+      scale <- "maxabs"
+    } else {
+      n_neighbors <- 15
+      scale <- FALSE
+    }
+  }
+
+  uwot_res <- uwot(
+    X = X, n_neighbors = n_neighbors,
+    metric = metric, n_epochs = 0, scale = scale,
+    init = NULL,
+    set_op_mix_ratio = set_op_mix_ratio,
+    local_connectivity = local_connectivity,
+    nn_method = nn_method, n_trees = n_trees,
+    search_k = search_k,
+    method = method,
+    n_threads = n_threads,
+    n_build_threads = n_build_threads,
+    grain_size = grain_size,
+    kernel = kernel, perplexity = perplexity,
+    y = y, target_n_neighbors = target_n_neighbors,
+    target_weight = target_weight, target_metric = target_metric,
+    pca = pca, pca_center = pca_center, pca_method = pca_method,
+    ret_model = FALSE,
+    ret_nn = "nn" %in% ret_extra,
+    ret_fgraph = TRUE,
+    ret_sigma = "sigma" %in% ret_extra,
+    ret_localr = "localr" %in% ret_extra,
+    binary_edge_weights = binary_edge_weights,
+    tmpdir = tempdir(),
+    verbose = verbose,
+    nn_args = nn_args
+  )
+
+  res <- list()
+  for (name in names(uwot_res)) {
+    if (name == "embedding") {
+      # embedding will be NULL so remove it
+      next
+    }
+    if (name == "P" || name == "fgraph") {
+      res$similarity_graph <- uwot_res[[name]]
+    } else {
+      res[[name]] <- uwot_res[[name]]
+    }
+  }
+  if (length(names(res)) == 1 && !is.null(res$similarity_graph)) {
+    # return just the similarity graph if no extras were requested
+    res <- res$similarity_graph
+  }
+  res
+}
+
+#' Optimize Graph Layout
+#'
+#' Carry out dimensionality reduction on an input graph, where the distances in
+#' the low dimensional space attempt to reproduce the neighbor relations in the
+#' input data. By default, the cost function used to optimize the output
+#' coordinates use the Uniform Manifold Approximation and Projection (UMAP)
+#' method (McInnes et al., 2018), but the approach from LargeVis (Tang et al.,
+#' 2016) can also be used. This function can be used to produce a low
+#' dimensional representation of the graph produced by
+#' \code{\link{similarity_graph}}.
+#'
+#' @param graph A sparse, symmetric N x N weighted adjacency matrix
+#'   representing a graph. Non-zero entries indicate an edge between two nodes
+#'   with a given edge weight. There can be a varying number of non-zero entries
+#'   in each row/column.
+#' @param X Optional input data. Used only for PCA-based initialization.
+#' @param n_components The dimension of the space to embed into. This defaults
+#'   to \code{2} to provide easy visualization, but can reasonably be set to any
+#'   integer value in the range \code{2} to \code{100}.
+#' @param n_epochs Number of epochs to use during the optimization of the
+#'   embedded coordinates. By default, this value is set to \code{500} for
+#'   datasets containing 10,000 vertices or less, and \code{200} otherwise.
+#'   If \code{n_epochs = 0}, then coordinates determined by \code{"init"} will
+#'   be returned.
+#' For UMAP, the default is \code{"none"}.
+#' @param learning_rate Initial learning rate used in optimization of the
+#'   coordinates.
+#' @param init Type of initialization for the coordinates. Options are:
+#'   \itemize{
+#'     \item \code{"spectral"} Spectral embedding using the normalized Laplacian
+#'     of the fuzzy 1-skeleton, with Gaussian noise added.
+#'     \item \code{"normlaplacian"}. Spectral embedding using the normalized
+#'     Laplacian of the fuzzy 1-skeleton, without noise.
+#'     \item \code{"random"}. Coordinates assigned using a uniform random
+#'     distribution between -10 and 10.
+#'     \item \code{"lvrandom"}. Coordinates assigned using a Gaussian
+#'     distribution with standard deviation 1e-4, as used in LargeVis
+#'     (Tang et al., 2016) and t-SNE.
+#'     \item \code{"laplacian"}. Spectral embedding using the Laplacian Eigenmap.
+#'     \item \code{"pca"}. The first two principal components from PCA of
+#'     \code{X} if \code{X} is a data frame, and from a 2-dimensional classical
+#'     MDS if \code{X} is of class \code{"dist"}.
+#'     \item \code{"spca"}. Like \code{"pca"}, but each dimension is then scaled
+#'     so the standard deviation is 1e-4, to give a distribution similar to that
+#'     used in t-SNE. This is an alias for \code{init = "pca", init_sdev =
+#'     1e-4}.
+#'     \item \code{"agspectral"} An "approximate global" modification of
+#'     \code{"spectral"} which all edges in the graph to a value of 1, and then
+#'     sets a random number of edges (\code{negative_sample_rate} edges per
+#'     vertex) to 0.1, to approximate the effect of non-local affinities.
+#'     \item A matrix of initial coordinates.
+#'   }
+#'  For spectral initializations, (\code{"spectral"}, \code{"normlaplacian"},
+#'  \code{"laplacian"}, \code{"agspectral"}), if more than one connected
+#'  component is identified, no spectral initialization is attempted. Instead
+#'  a PCA-based initialization is attempted. If \code{verbose = TRUE} the
+#'  number of connected components are logged to the console. The existence of
+#'  multiple connected components implies that a global view of the data cannot
+#'  be attained with this initialization. Increasing the value of
+#'  \code{n_neighbors} may help.
+#' @param init_sdev If non-\code{NULL}, scales each dimension of the initialized
+#'   coordinates (including any user-supplied matrix) to this standard
+#'   deviation. By default no scaling is carried out, except when \code{init =
+#'   "spca"}, in which case the value is \code{0.0001}. Scaling the input may
+#'   help if the unscaled versions result in initial coordinates with large
+#'   inter-point distances or outliers. This usually results in small gradients
+#'   during optimization and very little progress being made to the layout.
+#'   Shrinking the initial embedding by rescaling can help under these
+#'   circumstances. Scaling the result of \code{init = "pca"} is usually
+#'   recommended and \code{init = "spca"} as an alias for \code{init = "pca",
+#'   init_sdev = 1e-4} but for the spectral initializations the scaled versions
+#'   usually aren't necessary unless you are using a large value of
+#'   \code{n_neighbors} (e.g. \code{n_neighbors = 150} or higher). For
+#'   compatibility with recent versions of the Python UMAP package, if you are
+#'   using \code{init = "spectral"}, then you should also set
+#'   \code{init_sdev = "range"}, which will range scale each of the columns
+#'   containing the initial data between 0-10. This is not set by default to
+#'   maintain backwards compatibility with previous versions of uwot.
+#' @param spread The effective scale of embedded points. In combination with
+#'   \code{min_dist}, this determines how clustered/clumped the embedded points
+#'   are.
+#' @param min_dist The effective minimum distance between embedded points.
+#'   Smaller values will result in a more clustered/clumped embedding where
+#'   nearby points on the manifold are drawn closer together, while larger
+#'   values will result on a more even dispersal of points. The value should be
+#'   set relative to the \code{spread} value, which determines the scale at
+#'   which embedded points will be spread out.
+#' @param repulsion_strength Weighting applied to negative samples in low
+#'   dimensional embedding optimization. Values higher than one will result in
+#'   greater weight being given to negative samples.
+#' @param negative_sample_rate The number of negative edge/1-simplex samples to
+#'   use per positive edge/1-simplex sample in optimizing the low dimensional
+#'   embedding.
+#' @param a More specific parameters controlling the embedding. If \code{NULL}
+#'   these values are set automatically as determined by \code{min_dist} and
+#'   \code{spread}.
+#' @param b More specific parameters controlling the embedding. If \code{NULL}
+#'   these values are set automatically as determined by \code{min_dist} and
+#'   \code{spread}.
+#' @param approx_pow If \code{TRUE}, use an approximation to the power function
+#'   in the UMAP gradient, from
+#'   \url{https://martin.ankerl.com/2012/01/25/optimized-approximative-pow-in-c-and-cpp/}.
+#' @param method Cost function to optimize. One of:
+#' \itemize{
+#'   \item{\code{"umap"}}. The UMAP method of McInnes and co-workers (2018).
+#'   \item{\code{"tumap"}}. UMAP with the \code{a} and \code{b} parameters fixed
+#'   to 1.
+#'   \item{\code{"largevis"}}. The LargeVis method Tang and co-workers (2016).
+#' }
+#' @param pca_method Method to carry out any PCA dimensionality reduction when
+#'   the \code{pca} parameter is specified. Allowed values are:
+#'   \itemize{
+#'     \item{\code{"irlba"}}. Uses \code{\link[irlba]{prcomp_irlba}} from the
+#'     \href{https://cran.r-project.org/package=irlba}{irlba} package.
+#'     \item{\code{"rsvd"}}. Uses 5 iterations of \code{\link[irlba]{svdr}} from
+#'     the \href{https://cran.r-project.org/package=irlba}{irlba} package.
+#'     This is likely to give much faster but potentially less accurate results
+#'     than using \code{"irlba"}. For the purposes of nearest neighbor
+#'     calculation and coordinates initialization, any loss of accuracy doesn't
+#'     seem to matter much.
+#'     \item{\code{"bigstatsr"}}. Uses \code{\link[bigstatsr]{big_randomSVD}}
+#'     from the \href{https://cran.r-project.org/package=bigstatsr}{bigstatsr}
+#'     package. The SVD methods used in \code{bigstatsr} may be faster on
+#'     systems without access to efficient linear algebra libraries (e.g.
+#'     Windows). \strong{Note}: \code{bigstatsr} is \emph{not} a dependency of
+#'     uwot: if you choose to use this package for PCA, you \emph{must} install
+#'     it yourself.
+#'     \item{\code{"svd"}}. Uses \code{\link[base]{svd}} for the SVD. This is
+#'     likely to be slow for all but the smallest datasets.
+#'     \item{\code{"auto"}} (the default). Uses \code{"irlba"}, unless more than
+#'     50% of the full set of singular vectors would be calculated, in which
+#'     case \code{"svd"} is used.
+#'   }
+#' @param pcg_rand If \code{TRUE}, use the PCG random number generator (O'Neill,
+#'   2014) during optimization. Otherwise, use the faster (but probably less
+#'   statistically good) Tausworthe "taus88" generator. The default is
+#'   \code{TRUE}. This parameter has been superseded by \code{rng_type} -- if
+#'   both are set, \code{rng_type} takes precedence.
+#' @param rng_type The type of random number generator to use during
+#'   optimization. One of:
+#'   \itemize{
+#'    \item{\code{"pcg"}}. Use the PCG random number generator (O'Neill, 2014).
+#'    \item{\code{"tausworthe"}}. Use the Tausworthe "taus88" generator.
+#'    \item{\code{"deterministic"}}. Use a deterministic number generator. This
+#'    isn't actually random, but may provide enough variation in the negative
+#'    sampling to give a good embedding and can provide a noticeable speed-up.
+#'   }
+#'   For backwards compatibility, by default this is unset and the choice of
+#'   \code{pcg_rand} is used (making "pcg" the effective default).
+#' @param fast_sgd If \code{TRUE}, then the following combination of parameters
+#'   is set: \code{pcg_rand = TRUE}, \code{n_sgd_threads = "auto"} and
+#'   \code{approx_pow = TRUE}. The default is \code{FALSE}. Setting this to
+#'   \code{TRUE} will speed up the stochastic optimization phase, but give a
+#'   potentially less accurate embedding, and which will not be exactly
+#'   reproducible even with a fixed seed. For visualization, \code{fast_sgd =
+#'   TRUE} will give perfectly good results. For more generic dimensionality
+#'   reduction, it's safer to leave \code{fast_sgd = FALSE}. If \code{fast_sgd =
+#'   TRUE}, then user-supplied values of \code{pcg_rand}, \code{n_sgd_threads},
+#'   and \code{approx_pow} are ignored.
+#' @param batch If \code{TRUE}, then embedding coordinates are updated at the
+#'   end of each epoch rather than during the epoch. In batch mode, results are
+#'   reproducible with a fixed random seed even with \code{n_sgd_threads > 1},
+#'   at the cost of a slightly higher memory use. You may also have to modify
+#'   \code{learning_rate} and increase \code{n_epochs}, so whether this provides
+#'   a speed increase over the single-threaded optimization is likely to be
+#'   dataset and hardware-dependent.
+#' @param n_sgd_threads Number of threads to use during stochastic gradient
+#'   descent. If set to > 1, then be aware that if \code{batch = FALSE}, results
+#'   will \emph{not} be reproducible, even if \code{set.seed} is called with a
+#'   fixed seed before running. If set to \code{"auto"} then half the number of
+#'   concurrent threads supported by the system will be used.
+#' @param grain_size The minimum amount of work to do on each thread. If this
+#'   value is set high enough, then less than \code{n_threads} or
+#'   \code{n_sgd_threads} will be used for processing, which might give a
+#'   performance improvement if the overhead of thread management and context
+#'   switching was outweighing the improvement due to concurrent processing.
+#'   This should be left at default (\code{1}) and work will be spread evenly
+#'   over all the threads specified.
+#' @param verbose If \code{TRUE}, log details to the console.
+#' @param opt_args A list of optimizer parameters, used when
+#'   \code{batch = TRUE}. The default optimization method used is Adam (Kingma
+#'   and Ba, 2014).
+#'   \itemize{
+#'     \item \code{method} The optimization method to use. Either \code{"adam"}
+#'     or \code{"sgd"} (stochastic gradient descent). Default: \code{"adam"}.
+#'     \item \code{beta1} (Adam only). The weighting parameter for the
+#'     exponential moving average of the first moment estimator. Effectively the
+#'     momentum parameter. Should be a floating point value between 0 and 1.
+#'     Higher values can smooth oscillatory updates in poorly-conditioned
+#'     situations and may allow for a larger \code{learning_rate} to be
+#'     specified, but too high can cause divergence. Default: \code{0.5}.
+#'     \item \code{beta2} (Adam only). The weighting parameter for the
+#'     exponential moving average of the uncentered second moment estimator.
+#'     Should be a floating point value between 0 and 1. Controls the degree of
+#'     adaptivity in the step-size. Higher values put more weight on previous
+#'     time steps. Default: \code{0.9}.
+#'     \item \code{eps} (Adam only). Intended to be a small value to prevent
+#'     division by zero, but in practice can also affect convergence due to its
+#'     interaction with \code{beta2}. Higher values reduce the effect of the
+#'     step-size adaptivity and bring the behavior closer to stochastic gradient
+#'     descent with momentum. Typical values are between 1e-8 and 1e-3. Default:
+#'     \code{1e-7}.
+#'     \item \code{alpha} The initial learning rate. Default: the value of the
+#'     \code{learning_rate} parameter.
+#'   }
+#' @param epoch_callback A function which will be invoked at the end of every
+#'   epoch. Its signature should be: \code{(epoch, n_epochs, coords)}, where:
+#'   \itemize{
+#'     \item \code{epoch} The current epoch number (between \code{1} and
+#'     \code{n_epochs}).
+#'     \item \code{n_epochs} Number of epochs to use during the optimization of
+#'     the embedded coordinates.
+#'     \item \code{coords} The embedded coordinates as of the end of the current
+#'     epoch, as a matrix with dimensions (N, \code{n_components}).
+#'   }
+#' @param binary_edge_weights If \code{TRUE} then edge weights in the input
+#'   graph are treated as binary (0/1) rather than real valued.
+#' @return A matrix of optimized coordinates.
+#'
+#' @examples
+#'
+#' iris30 <- iris[c(1:10, 51:60, 101:110), ]
+#'
+#' # return a 30 x 30 sparse matrix with similarity data based on 10 nearest
+#' # neighbors per item
+#' iris30_sim_graph <- similarity_graph(iris30, n_neighbors = 10)
+#' # produce 2D coordinates replicating the neighbor relations in the similarity
+#' # graph
+#' set.seed(42)
+#' iris30_opt <- optimize_graph_layout(iris30_sim_graph, X = iris30)
+#'
+#' # the above two steps are the same as:
+#' # set.seed(42); iris_umap <- umap(iris30, n_neighbors = 10)
+#'
+#' @references
+#' Kingma, D. P., & Ba, J. (2014).
+#' Adam: A method for stochastic optimization.
+#' \emph{arXiv preprint} \emph{arXiv}:1412.6980.
+#' \url{https://arxiv.org/abs/1412.6980}
+#'
+#' McInnes, L., Healy, J., & Melville, J. (2018).
+#' UMAP: Uniform Manifold Approximation and Projection for Dimension Reduction
+#' \emph{arXiv preprint} \emph{arXiv}:1802.03426.
+#' \url{https://arxiv.org/abs/1802.03426}
+#'
+#' O'Neill, M. E. (2014).
+#' \emph{PCG: A family of simple fast space-efficient statistically good
+#' algorithms for random number generation}
+#' (Report No. HMC-CS-2014-0905). Harvey Mudd College.
+#'
+#' Tang, J., Liu, J., Zhang, M., & Mei, Q. (2016, April).
+#' Visualizing large-scale and high-dimensional data.
+#' In \emph{Proceedings of the 25th International Conference on World Wide Web}
+#' (pp. 287-297).
+#' International World Wide Web Conferences Steering Committee.
+#' \url{https://arxiv.org/abs/1602.00370}
+#'
+#' @export
+optimize_graph_layout <-
+  function(graph,
+           X = NULL,
+           n_components = 2,
+           n_epochs = NULL,
+           learning_rate = 1,
+           init = "spectral",
+           init_sdev = NULL,
+           spread = 1,
+           min_dist = 0.01,
+           repulsion_strength = 1.0,
+           negative_sample_rate = 5.0,
+           a = NULL,
+           b = NULL,
+           method = "umap",
+           approx_pow = FALSE,
+           pcg_rand = TRUE,
+           fast_sgd = FALSE,
+           n_sgd_threads = 0,
+           grain_size = 1,
+           verbose = getOption("verbose", TRUE),
+           batch = FALSE,
+           opt_args = NULL,
+           epoch_callback = NULL,
+           pca_method = NULL,
+           binary_edge_weights = FALSE,
+           rng_type = NULL) {
+    if (!is_sparse_matrix(graph)) {
+      stop("graph should be a sparse matrix")
+    }
+    if (nrow(graph) != ncol(graph)) {
+      stop("graph should be a square matrix")
+    }
+    if (!Matrix::isSymmetric(graph)) {
+      stop("graph should be symmetric")
+    }
+    if (!all(diff(graph@p) > 0)) {
+      stop("All items must have at least one neighbor similarity defined")
+    }
+
+    # Just do things the UMAP way or we will have a very slow largevis
+    # optimization
+    if (is.null(n_epochs)) {
+      n_vertices <- nrow(graph)
+      if (n_vertices <= 10000) {
+        n_epochs <- 500
+      } else {
+        n_epochs <- 200
+      }
+    }
+
+    uwot(
+      X = X,
+      nn_method = graph,
+      is_similarity_graph = TRUE,
+      n_components = n_components,
+      n_epochs = n_epochs,
+      alpha = learning_rate,
+      init = init,
+      init_sdev = init_sdev,
+      spread = spread,
+      min_dist = min_dist,
+      gamma = repulsion_strength,
+      negative_sample_rate = negative_sample_rate,
+      a = a,
+      b = b,
+      method = method,
+      approx_pow = approx_pow,
+      pcg_rand = pcg_rand,
+      fast_sgd = fast_sgd,
+      n_sgd_threads = n_sgd_threads,
+      grain_size = grain_size,
+      verbose = verbose,
+      batch = batch,
+      opt_args = opt_args,
+      epoch_callback = epoch_callback,
+      pca_method = pca_method,
+      rng_type = rng_type
+    )
+  }
+
+#' Merge Similarity Graph by Simplicial Set Union
+#'
+#' Combine two similarity graphs by treating them as fuzzy topological sets and
+#' forming the union.
+#'
+#' @param x A sparse matrix representing the first similarity graph in the union
+#'   operation.
+#' @param y A sparse matrix representing the second similarity graph in the
+#'   union operation.
+#' @param n_threads Number of threads to use when resetting the local metric.
+#'   Default is half the number of concurrent threads supported by the system.
+#' @param verbose If \code{TRUE}, log progress to the console.
+#' @returns A sparse matrix containing the union of \code{x} and \code{y}.
+#' @examples
+#'
+#' # Form two different "views" of the same data
+#' iris30 <- iris[c(1:10, 51:60, 101:110), ]
+#' iris_sg12 <- similarity_graph(iris30[, 1:2], n_neighbors = 5)
+#' iris_sg34 <- similarity_graph(iris30[, 3:4], n_neighbors = 5)
+#'
+#' # Combine the two representations into one
+#' iris_combined <- simplicial_set_union(iris_sg12, iris_sg34)
+#'
+#' # Optimize the layout based on the combined view
+#' iris_combined_umap <- optimize_graph_layout(iris_combined, n_epochs = 100)
+#' @export
+simplicial_set_union <-
+  function(x,
+           y,
+           n_threads = NULL,
+           verbose = FALSE) {
+    if (!is_sparse_matrix(x)) {
+      stop("similarity graph x must be a sparse matrix")
+    }
+    if (!is_sparse_matrix(y)) {
+      stop("similarity graph y must be a sparse matrix")
+    }
+    if (!all(dim(x) == dim(y))) {
+      stop("x and y must have identical dimensions")
+    }
+
+    z <- methods::as(x + y, "TsparseMatrix")
+
+    z@x <- general_sset_union_cpp(
+      x@p,
+      x@i,
+      x@x,
+      y@p,
+      y@i,
+      y@x,
+      z@i,
+      z@j,
+      z@x
+    )
+
+    z <- Matrix::drop0(z)
+    reset_local_connectivity(
+      z,
+      reset_local_metric = TRUE,
+      n_threads = n_threads,
+      verbose = verbose
+    )
+  }
+
+
+#' Merge Similarity Graph by Simplicial Set Intersection
+#'
+#' Combine two similarity graphs by treating them as fuzzy topological sets and
+#' forming the intersection.
+#'
+#' @param x A sparse matrix representing the first similarity graph in the
+#'   intersection operation.
+#' @param y A sparse matrix representing the second similarity graph in the
+#'   intersection operation.
+#' @param weight A value between \code{0 - 1}, controlling the relative
+#'   influence of \code{x} and \code{y} in the intersection. Default
+#'   (\code{0.5}) gives equal influence. Values smaller than \code{0.5} put more
+#'   weight on \code{x}. Values greater than \code{0.5} put more weight on
+#'   \code{y}.
+#' @param n_threads Number of threads to use when resetting the local metric.
+#'   Default is half the number of concurrent threads supported by the system.
+#' @param verbose If \code{TRUE}, log progress to the console.
+#' @returns A sparse matrix containing the intersection of \code{x} and
+#'   \code{y}.
+#' @examples
+#'
+#' # Form two different "views" of the same data
+#' iris30 <- iris[c(1:10, 51:60, 101:110), ]
+#' iris_sg12 <- similarity_graph(iris30[, 1:2], n_neighbors = 5)
+#' iris_sg34 <- similarity_graph(iris30[, 3:4], n_neighbors = 5)
+#'
+#' # Combine the two representations into one
+#' iris_combined <- simplicial_set_intersect(iris_sg12, iris_sg34)
+#'
+#' # Optimize the layout based on the combined view
+#' iris_combined_umap <- optimize_graph_layout(iris_combined, n_epochs = 100)
+#' @export
+simplicial_set_intersect <- function(x, y, weight = 0.5, n_threads = NULL,
+                                     verbose = FALSE) {
+  if (weight < 0 || weight > 1) {
+    stop("weight must be between 0-1")
+  }
+  if (!is_sparse_matrix(x)) {
+    stop("similarity graph x must be a sparse matrix")
+  }
+  if (!is_sparse_matrix(y)) {
+    stop("similarity graph y must be a sparse matrix")
+  }
+  if (!all(dim(x) == dim(y))) {
+    stop("x and y must have identical dimensions")
+  }
+  set_intersect(
+    A = x, B = y, weight = weight, reset_connectivity = TRUE,
+    reset_local_metric = TRUE, n_threads = n_threads,
+    verbose = verbose
+  )
+}
+
+# Function that does all the real work
+uwot <- function(X, n_neighbors = 15, n_components = 2, metric = "euclidean",
+                 n_epochs = NULL,
+                 alpha = 1, scale = FALSE,
+                 init = "spectral", init_sdev = NULL,
+                 spread = 1, min_dist = 0.01,
+                 set_op_mix_ratio = 1.0, local_connectivity = 1.0,
+                 bandwidth = 1.0, gamma = 1.0,
+                 negative_sample_rate = 5.0, a = NULL, b = NULL,
+                 nn_method = NULL, n_trees = 50,
+                 search_k = 2 * n_neighbors * n_trees,
+                 method = "umap",
+                 perplexity = 50, approx_pow = FALSE,
+                 y = NULL, target_n_neighbors = n_neighbors,
+                 target_metric = "euclidean",
+                 target_weight = 0.5,
+                 n_threads = NULL,
+                 n_build_threads = NULL,
+                 n_sgd_threads = 0,
+                 grain_size = 1,
+                 kernel = "gauss",
+                 ret_model = FALSE, ret_nn = FALSE, ret_fgraph = FALSE,
+                 ret_sigma = FALSE, ret_localr = FALSE,
+                 pca = NULL, pca_center = TRUE, pca_method = NULL,
+                 pcg_rand = TRUE,
+                 fast_sgd = FALSE,
+                 batch = FALSE,
+                 opt_args = NULL,
+                 tmpdir = tempdir(),
+                 verbose = getOption("verbose", TRUE),
+                 epoch_callback = NULL,
+                 binary_edge_weights = FALSE,
+                 dens_scale = NULL,
+                 is_similarity_graph = FALSE,
+                 seed = NULL,
+                 nn_args = list(),
+                 sparse_X_is_distance_matrix = TRUE,
+                 rng_type = "pcg") {
+  if (is.null(n_threads)) {
+    n_threads <- default_num_threads()
+  }
+  method <- match.arg(tolower(method), c("umap", "tumap", "largevis"))
+  nn_method <- normalize_nn_method(nn_method)
+
+  if (method == "umap") {
+    if (is.null(a) || is.null(b)) {
+      ab_res <- find_ab_params(spread = spread, min_dist = min_dist)
+      a <- ab_res[1]
+      b <- ab_res[2]
+      tsmessage("UMAP embedding parameters a = ", formatC(a), " b = ", formatC(b))
+    } else {
+      # set min_dist and spread to NULL so if ret_model = TRUE, their default
+      # values are not mistaken for having been used for anything
+      min_dist <- NULL
+      spread <- NULL
+    }
+  }
+
+  if (n_neighbors < 2) {
+    stop("n_neighbors must be >= 2")
+  }
+
+  if (set_op_mix_ratio < 0.0 || set_op_mix_ratio > 1.0) {
+    stop("set_op_mix_ratio must be between 0.0 and 1.0")
+  }
+
+  if (local_connectivity < 1.0) {
+    stop("local_connectivity cannot be < 1.0")
+  }
+
+  if (!is.null(y) && is.numeric(y) && any(is.na(y))) {
+    stop("numeric y cannot contain NA")
+  }
+
+  if (!is.numeric(n_components) || n_components < 1) {
+    stop("'n_components' must be a positive integer")
+  }
+
+  if (!is.null(pca)) {
+    if (!is.numeric(pca) || pca < 1) {
+      stop("'pca' must be a positive integer")
+    }
+    if (pca < n_components) {
+      stop("'pca' must be >= n_components")
+    }
+    if (pca > min(nrow(X), ncol(X))) {
+      tsmessage("pca = ",
+                pca,
+                " is greater than the number of rows or columns in X, ",
+                "ignoring pca")
+      pca <- NULL
+    }
+  }
+  if (is.null(pca_method)) {
+    pca_method <- "auto"
+  }
+  pca_method <-
+    match.arg(pca_method,
+      choices = c("irlba", "svdr", "bigstatsr", "svd", "auto")
+    )
+
+  if (fast_sgd) {
+    n_sgd_threads <- "auto"
+    pcg_rand <- FALSE
+    approx_pow <- TRUE
+  }
+
+  if (n_threads < 0) {
+    stop("n_threads cannot be < 0")
+  }
+  if (n_threads %% 1 != 0) {
+    n_threads <- round(n_threads)
+    tsmessage("Non-integer 'n_threads' provided. Setting to ", n_threads)
+  }
+  if (is.null(n_build_threads)) {
+    n_build_threads <- n_threads
+  }
+  if (n_build_threads < 0) {
+    stop("n_build_threads cannot be < 0")
+  }
+  if (n_build_threads %% 1 != 0) {
+    n_build_threads <- round(n_build_threads)
+    tsmessage(
+      "Non-integer 'n_build_threads' provided. Setting to ",
+      n_build_threads
+    )
+  }
+  if (n_sgd_threads == "auto") {
+    n_sgd_threads <- n_threads
+  }
+  if (n_sgd_threads < 0) {
+    stop("n_sgd_threads cannot be < 0")
+  }
+  if (n_sgd_threads %% 1 != 0) {
+    n_sgd_threads <- round(n_sgd_threads)
+    tsmessage("Non-integer 'n_sgd_threads' provided. Setting to ", n_sgd_threads)
+  }
+  if (!is.null(dens_scale) && approx_pow) {
+    warning("approx_pow parameter is ignored when using dens_scale")
+    approx_pow <- FALSE
+  }
+  # 110: for more consistent reproducibility set a user-supplied seed
+  if (!is.null(seed)) {
+    tsmessage("Setting random seed ", seed)
+    set.seed(seed)
+  }
+
+  if (is.null(rng_type)) {
+    rng_type <- ifelse(pcg_rand, "pcg", "tausworthe")
+  }
+  rng_type <- match.arg(rng_type, c("pcg", "tausworthe", "deterministic"))
+
+  if (is.character(nn_method) && nn_method == "hnsw") {
+    if (!is_installed("RcppHNSW")) {
+      stop("RcppHNSW is required for nn_method = 'hnsw', please install it")
+    }
+    if (!is_ok_hnsw_metric(metric)) {
+      stop(
+        "bad metric: hnsw only supports 'euclidean', 'cosine' or ",
+        "'correlation' metrics"
+      )
+    }
+    if (!is_ok_hnsw_metric(target_metric)) {
+      stop(
+        "bad target_metric: hnsw only supports 'euclidean', 'cosine' or ",
+        "'correlation' metrics"
+      )
+    }
+  }
+
+  if (is.character(nn_method) && nn_method == "nndescent") {
+    if (!is_installed("rnndescent")) {
+      stop("rnndescent is required for nn_method = 'nndescent',",
+           " please install it")
+    }
+  }
+
+  ret_extra <- ret_model || ret_nn || ret_fgraph || ret_sigma || ret_localr
+
+  # Store categorical columns to be used to generate the graph
+  Xcat <- NULL
+  # number of original columns in data frame (or matrix)
+  # will be used only if using df or matrix and ret_model = TRUE
+  norig_col <- NULL
+  # row names for the input data, which we will apply to the embedding if
+  # needed
+  Xnames <- NULL
+  num_precomputed_nns <- 0
+  if (is.null(X)) {
+    if (!nn_is_precomputed(nn_method)) {
+      stop("If X is NULL, must provide NN data in nn_method")
+    }
+    if (is.character(init) && tolower(init) %in% c("spca", "pca")) {
+      stop("init = 'pca' and 'spca' can't be used with X = NULL")
+    }
+    if (length(nn_method) == 0) {
+      stop("Incorrect format for precalculated neighbor data")
+    }
+    n_vertices <- x2nv(nn_method)
+    stopifnot(n_vertices > 0)
+    num_precomputed_nns <- check_graph_list(nn_method, n_vertices,
+      bipartite = FALSE
+    )
+    Xnames <- nn_graph_row_names_list(nn_method)
+  } else if (inherits(X, "dist")) {
+    if (ret_model) {
+      stop("Can only create models with dense matrix or data frame input")
+    }
+    checkna(X)
+    n_vertices <- attr(X, "Size")
+    tsmessage("Read ", n_vertices, " rows")
+    Xnames <- labels(X)
+  } else if (is_sparse_matrix(X) && sparse_X_is_distance_matrix) {
+    if (ret_model) {
+      stop("Can only create models with dense matrix or data frame input")
+    }
+    checkna(X)
+    n_vertices <- nrow(X)
+    if (ncol(X) != n_vertices) {
+      stop("Sparse matrices are only supported as distance matrices")
+    }
+    tsmessage("Read ", n_vertices, " rows of sparse distance matrix")
+    Xnames <- row.names(X)
+  } else {
+    cat_ids <- NULL
+    norig_col <- ncol(X)
+    if (methods::is(X, "data.frame") || methods::is(X, "matrix") || is_sparse_matrix(X)) {
+      cat_res <- find_categoricals(metric)
+      metric <- cat_res$metrics
+      cat_ids <- cat_res$categoricals
+      # Convert categorical columns to factors if they aren't already
+      if (!is.null(cat_ids)) {
+        X[, cat_ids] <- sapply(X[, cat_ids, drop = FALSE], factor,
+          simplify = methods::is(X, "matrix")
+        )
+        Xcat <- X[, cat_ids, drop = FALSE]
+      }
+
+      if (methods::is(X, "data.frame")) {
+        indexes <- which(vapply(X, is.numeric, logical(1)))
+        if (length(indexes) == 0) {
+          stop("No numeric columns found")
+        }
+        tsmessage("Converting dataframe to numerical matrix")
+        if (length(indexes) != ncol(X)) {
+          X <- X[, indexes]
+        }
+        X <- as.matrix(X)
+      }
+      if (n_components > ncol(X)) {
+        warning(
+          "n_components ",
+          "> number of columns in input data: ",
+          n_components,
+          " > ",
+          ncol(X),
+          ", this may give poor or unexpected results"
+        )
+      }
+    } else {
+      stop("Unknown input data format")
+    }
+    checkna(X)
+    n_vertices <- nrow(X)
+    tsmessage(
+      "Read ", n_vertices, " rows and found ", ncol(X),
+      " numeric columns",
+      appendLF = is.null(cat_ids)
+    )
+    if (length(cat_ids) > 0) {
+      tsmessage(" and ", pluralize("categorical column", length(cat_ids)),
+        time_stamp = FALSE
+      )
+    }
+    Xnames <- row.names(X)
+    X <- remove_scaling_attrs(X)
+    X <- scale_input(X,
+      scale_type = scale, ret_model = ret_model,
+      verbose = verbose
+    )
+  }
+
+  # Store number of precomputed nn if X is non-NULL (NULL X case handled above)
+  if (nn_is_precomputed(nn_method) && num_precomputed_nns == 0) {
+    num_precomputed_nns <- check_graph_list(nn_method, n_vertices,
+      bipartite = FALSE
+    )
+    if (is.null(Xnames)) {
+      Xnames <- nn_graph_row_names_list(nn_method)
+    }
+  }
+
+  if (method == "largevis" && kernel == "knn") {
+    n_neighbors <- perplexity
+  }
+
+  if (max(n_neighbors) > n_vertices) {
+    # pre-calculated nearest neighbors ignores the user-supplied n_neighbors
+    # which is handled later
+    if (!is.list(nn_method)) {
+      if (method == "largevis") {
+        # for LargeVis, n_neighbors normally determined from perplexity not an
+        # error to be too large
+        tsmessage("Setting n_neighbors to ", n_vertices)
+        n_neighbors <- n_vertices
+      } else {
+        stop("n_neighbors must be smaller than the dataset size")
+      }
+    }
+  }
+
+  if (!is.list(metric)) {
+    metrics <- list(c())
+    names(metrics) <- metric
+  } else {
+    metrics <- metric
+  }
+
+  # For typical case of numeric matrix X and not using binary metric, save
+  # PCA results here in case initialization uses PCA too
+  pca_models <- NULL
+  pca_shortcut <- FALSE
+  if (!is.null(pca) && length(metric) == 1 && !is_binary_metric(metric) &&
+    is.matrix(X) && ncol(X) > pca) {
+    tsmessage("Reducing X column dimension to ", pca, " via PCA")
+    pca_res <- pca_init(X,
+      ndim = pca, center = pca_center, pca_method = pca_method,
+      ret_extra = ret_model, verbose = verbose
+    )
+    if (ret_model) {
+      X <- pca_res$scores
+      pca_models[["1"]] <- pca_res[c("center", "rotation")]
+      pca_res <- NULL
+    } else {
+      X <- pca_res
+    }
+    pca_shortcut <- TRUE
+  }
+
+  if (is_similarity_graph) {
+    d2sr <-
+      list(
+        V = nn_method,
+        nns = NULL,
+        pca_models = NULL,
+        sigma = NULL,
+        rho = NULL
+      )
+    need_sigma <- FALSE
+  } else {
+    need_sigma <- ret_sigma || ret_localr || !is.null(dens_scale)
+    d2sr <- data2set(
+      X,
+      Xcat,
+      n_neighbors,
+      metrics,
+      nn_method,
+      n_trees,
+      search_k,
+      method,
+      set_op_mix_ratio,
+      local_connectivity,
+      bandwidth,
+      perplexity,
+      kernel,
+      need_sigma,
+      n_threads,
+      n_build_threads,
+      grain_size,
+      ret_model,
+      pca = pca,
+      pca_center = pca_center,
+      pca_method = pca_method,
+      n_vertices = n_vertices,
+      nn_args = nn_args,
+      tmpdir = tmpdir,
+      sparse_is_distance = sparse_X_is_distance_matrix,
+      verbose = verbose
+    )
+  }
+  V <- d2sr$V
+  nns <- d2sr$nns
+  if (is.null(pca_models)) {
+    pca_models <- d2sr$pca_models
+  }
+
+  # Calculate approximate local radii
+  sigma <- NULL
+  rho <- NULL
+  localr <- NULL
+  dint <- NULL
+  if (need_sigma) {
+    sigma <- d2sr$sigma
+    rho <- d2sr$rho
+    dint <- d2sr$dint
+  }
+  if (!is.null(dens_scale) || ret_localr) {
+    localr <- sigma + rho
+  }
+
+  if (!is.null(y)) {
+    tsmessage("Processing y data")
+
+    if (!is.list(target_metric)) {
+      target_metrics <- list(c())
+      names(target_metrics) <- target_metric
+    } else {
+      target_metrics <- target_metric
+    }
+
+    ycat <- NULL
+    ycat_ids <- NULL
+    if (methods::is(y, "data.frame")) {
+      ycat_res <- find_categoricals(target_metric)
+      target_metric <- ycat_res$metrics
+      ycat_ids <- ycat_res$categoricals
+      if (!is.null(ycat_ids)) {
+        ycat <- y[, ycat_ids, drop = FALSE]
+      } else {
+        ycindexes <- which(vapply(y, is.factor, logical(1)))
+        if (length(ycindexes) > 0) {
+          ycat <- (y[, ycindexes, drop = FALSE])
+        }
+      }
+
+      yindexes <- which(vapply(y, is.numeric, logical(1)))
+
+      if (length(yindexes) > 0) {
+        y <- as.matrix(y[, yindexes])
+      } else {
+        y <- NULL
+      }
+    } else if (is.list(y)) {
+      nn_method <- y
+    } else if (is.numeric(y)) {
+      y <- as.matrix(y)
+    } else if (is.factor(y)) {
+      ycat <- data.frame(y)
+      y <- NULL
+    }
+
+    if (!is.null(y)) {
+      yd2sr <- data2set(y, ycat, target_n_neighbors, target_metrics, nn_method,
+        n_trees, search_k,
+        method,
+        set_op_mix_ratio = 1.0,
+        local_connectivity = 1.0,
+        bandwidth = 1.0,
+        perplexity = perplexity, kernel = kernel,
+        ret_sigma = FALSE,
+        n_threads = n_threads, 
+        n_build_threads = n_build_threads,
+        grain_size = grain_size,
+        ret_model = FALSE,
+        pca = pca, pca_center = TRUE, pca_method = pca_method,
+        n_vertices = n_vertices,
+        tmpdir = tmpdir,
+        verbose = verbose
+      )
+
+      tsmessage(
+        "Intersecting X and Y sets with target weight = ",
+        formatC(target_weight)
+      )
+      # behavior for supervised UMAP: do reset local connectivity
+      # don't reset metric (same as Python UMAP as of 0.5.3)
+      V <- set_intersect(V, yd2sr$V, target_weight, reset_connectivity = TRUE)
+      yd2sr$V <- NULL
+      yd2sr$nns <- NULL
+    } else if (!is.null(ycat)) {
+      V <- categorical_intersection_df(ycat, V,
+        weight = target_weight,
+        verbose = verbose
+      )
+    }
+  }
+
+  if (!(ret_model || ret_nn)) {
+    nns <- NULL
+    gc()
+  }
+
+  if (methods::is(init, "matrix")) {
+    if (nrow(init) != n_vertices || ncol(init) != n_components) {
+      stop("init matrix does not match necessary configuration for X: ", "should
+           have dimensions (", n_vertices, ", ", n_components, ")")
+    }
+    tsmessage("Initializing from user-supplied matrix")
+    embedding <- scale_coords(init, init_sdev, verbose = verbose)
+  } else if (!(methods::is(init, "character") && length(init) == 1)) {
+    if (is.null(init) && !is.null(n_epochs) && n_epochs == 0) {
+      embedding <- NULL
+      if (!ret_extra) {
+        warning(
+          "Neither high-dimensional nor low-dimensional data will be ",
+          "returned with this combination of settings"
+        )
+      }
+      if (ret_model) {
+        warning(
+          "Returning a model but it will not be valid for transforming ",
+          "new data"
+        )
+      }
+    } else {
+      stop(
+        "init should be either a matrix or string describing the ",
+        "initialization method"
+      )
+    }
+  } else {
+    init <- match.arg(tolower(init), c(
+      "spectral", "random", "lvrandom", "normlaplacian",
+      "laplacian", "spca", "pca", "inormlaplacian", "ispectral",
+      "agspectral", "irlba_spectral", "irlba_laplacian", "pacpca"
+    ))
+
+    if (init_is_spectral(init) && init != "agspectral") {
+      connected <- connected_components(V)
+      if (connected$n_components > 1) {
+        tsmessage("Found ", connected$n_components, " connected components, ", appendLF = FALSE)
+        if (is.null(X)) {
+          tsmessage("falling back to random initialization", time_stamp = FALSE)
+          init <- "random"
+        } else {
+          tsmessage("falling back to 'spca' initialization with init_sdev = 1",
+            time_stamp = FALSE
+          )
+          init <- "spca"
+          init_sdev <- 1
+        }
+      }
+    }
+
+    # Don't repeat PCA initialization if we've already done it once
+    if (pca_shortcut && init %in% c("spca", "pca", "pacpca") && pca >= n_components) {
+      embedding <- X[, 1:n_components]
+      switch(init,
+        spca = tsmessage("Initializing from scaled PCA"),
+        pca = tsmessage("Initializing from PCA"),
+        pacpca = tsmessage("Initializing from PaCMAP-style PCA"),
+        stop("Unknown init method '", init, "'")
+      )
+    } else {
+      embedding <- switch(init,
+        spectral = spectral_init(V, ndim = n_components, verbose = verbose),
+        random = rand_init(n_vertices, n_components, verbose = verbose),
+        lvrandom = rand_init_lv(n_vertices, n_components, verbose = verbose),
+        normlaplacian = normalized_laplacian_init(V,
+          ndim = n_components,
+          verbose = verbose
+        ),
+        laplacian = laplacian_eigenmap(V, ndim = n_components, verbose = verbose),
+        # we handle scaling pca below
+        spca = pca_init(X,
+          ndim = n_components, pca_method = pca_method,
+          verbose = verbose
+        ),
+        pca = pca_init(X,
+          ndim = n_components, pca_method = pca_method,
+          verbose = verbose
+        ),
+        pacpca = pca_init(X,
+          ndim = n_components, pca_method = pca_method,
+          verbose = verbose
+        ),
+        ispectral = irlba_spectral_init(V, ndim = n_components, verbose = verbose),
+        inormlaplacian = irlba_normalized_laplacian_init(V,
+          ndim = n_components,
+          verbose = verbose
+        ),
+        agspectral = agspectral_init(V,
+          n_neg_nbrs = negative_sample_rate,
+          ndim = n_components, verbose = verbose
+        ),
+        irlba_spectral = spectral_init(V, ndim = n_components, verbose = verbose, force_irlba = TRUE),
+        irlba_laplacian = laplacian_eigenmap(V, ndim = n_components, verbose = verbose, force_irlba = TRUE),
+        stop("Unknown initialization method: '", init, "'")
+      )
+    }
+    if (init == "pacpca") {
+      embedding <- 0.01 * embedding
+    }
+    if (!is.null(init_sdev) || init == "spca") {
+      if (is.null(init_sdev)) {
+        init_sdev <- 1e-4
+      }
+      embedding <- scale_coords(embedding, init_sdev, verbose = verbose)
+    }
+  }
+  if (any(is.na(embedding))) {
+    stop("Initial data contains NA values: is n_components too high?")
+  }
+
+  if (is.null(n_epochs) || n_epochs < 0) {
+    if (method == "largevis") {
+      n_epochs <- lvish_epochs(n_vertices, V)
+    } else {
+      if (n_vertices <= 10000) {
+        n_epochs <- 500
+      } else {
+        n_epochs <- 200
+      }
+    }
+  }
+
+  full_opt_args <- get_opt_args(opt_args, alpha)
+
+  if (binary_edge_weights) {
+    V@x <- rep(1, length(V@x))
+  }
+
+  if (n_epochs > 0) {
+    if (any(apply(embedding, 2, stats::sd) > 10.0)) {
+      warning(
+        "Initial embedding standard deviation > 10.0, this can lead to ",
+        "poor optimization"
+      )
+    }
+
+    # remove edges which can't be sampled due to n_epochs
+    V@x[V@x < max(V@x) / n_epochs] <- 0
+    V <- Matrix::drop0(V)
+
+    # Create the (0-indexed) indices of the head and tail of each directed edge
+    # in V. Graph is symmetric, so both (i->j) and (j->i) are present
+    if (batch) {
+      V <- Matrix::t(V)
+      # head is ordered in non-decreasing order of node index
+      positive_head <- Matrix::which(V != 0, arr.ind = TRUE)[, 2] - 1
+      # tail is unordered
+      positive_tail <- V@i
+    } else {
+      # Use the Python UMAP ordering
+      # head is unordered
+      positive_head <- V@i
+      # tail is ordered in non-decreasing order of node index
+      positive_tail <- Matrix::which(V != 0, arr.ind = TRUE)[, 2] - 1
+    }
+    # start/end pointers into the ordered vector
+    positive_ptr <- V@p
+    epochs_per_sample <- make_epochs_per_sample(V@x, n_epochs)
+
+    tsmessage(
+      "Commencing optimization for ", n_epochs, " epochs, with ",
+      length(positive_head), " positive edges",
+      pluralize("thread", n_sgd_threads, " using")
+    )
+
+    ai <- NULL
+    if (!is.null(dens_scale)) {
+      ai <- scale_radii(localr, dens_scale, a)
+      method <- "leopold"
+      if (ret_model) {
+        # store the linear transform from localr to ai for transforming new data
+        lai2 <- 2 * log(range(ai))
+        llr <- -log(rev(range(localr)))
+        rad_coeff <- stats::lm(lai2 ~ llr)$coefficients
+      }
+    }
+
+    method <- tolower(method)
+    method_args <- switch(method,
+      umap = list(a = a, b = b, gamma = gamma, approx_pow = approx_pow),
+      tumap = list(gamma = gamma),
+      # a = 1 b = 10 for final phase of PaCMAP optimization
+      pacmap = list(a = a, b = b),
+      largevis = list(gamma = gamma),
+      leopold = list(ai = ai, b = b, ndim = n_components),
+      stop("Unknown dimensionality reduction method '", method, "'")
+    )
+    tsmessage("Using rng type: ", rng_type)
+
+    embedding <- t(embedding)
+    embedding <- optimize_layout_r(
+      head_embedding = embedding,
+      tail_embedding = NULL,
+      positive_head = positive_head,
+      positive_tail = positive_tail,
+      positive_ptr = positive_ptr,
+      n_epochs = n_epochs,
+      n_head_vertices = n_vertices,
+      n_tail_vertices = n_vertices,
+      epochs_per_sample = epochs_per_sample,
+      method = method,
+      method_args = method_args,
+      initial_alpha = alpha,
+      opt_args = full_opt_args,
+      negative_sample_rate = negative_sample_rate,
+      rng_type = rng_type,
+      batch = batch,
+      n_threads = n_sgd_threads,
+      grain_size = grain_size,
+      move_other = TRUE,
+      epoch_callback = epoch_callback,
+      verbose = verbose
+    )
+    embedding <- t(embedding)
+
+    gc()
+    # Center the points before returning
+    embedding <- scale(embedding, center = TRUE, scale = FALSE)
+
+    if (is.null(row.names(embedding)) &&
+      !is.null(Xnames) && length(Xnames) == nrow(embedding)) {
+      row.names(embedding) <- Xnames
+    }
+    tsmessage("Optimization finished")
+  }
+
+  if (ret_extra) {
+    nblocks <- length(nns)
+    res <- list(embedding = embedding)
+    if (ret_model) {
+      res <- append(res, list(
+        scale_info = if (!is.null(X)) {
+          attr_to_scale_info(X)
+        } else {
+          NULL
+        },
+        search_k = search_k,
+        local_connectivity = local_connectivity,
+        n_epochs = n_epochs,
+        alpha = alpha,
+        negative_sample_rate = negative_sample_rate,
+        method = method,
+        a = a,
+        b = b,
+        gamma = gamma,
+        approx_pow = approx_pow,
+        metric = metrics,
+        norig_col = norig_col,
+        pcg_rand = pcg_rand,
+        batch = batch,
+        opt_args = full_opt_args,
+        num_precomputed_nns = num_precomputed_nns,
+        # #95: min_dist and spread are exported for documentation purposes only
+        min_dist = min_dist,
+        spread = spread,
+        binary_edge_weights = binary_edge_weights,
+        seed = seed,
+        nn_method = nn_method,
+        nn_args = nn_args
+      ))
+      if (nn_is_precomputed(nn_method)) {
+        res$n_neighbors <- nn_graph_nbrs_list(nn_method)
+      } else {
+        res$n_neighbors <- n_neighbors
+      }
+      if (method == "leopold") {
+        res$dens_scale <- dens_scale
+        res$ai <- ai
+        res$rad_coeff <- rad_coeff
+      }
+      if (nblocks > 1) {
+        if (!nn_is_precomputed(nn_method)) {
+          res$nn_index <- list()
+          for (i in 1:nblocks) {
+            res$nn_index[[i]] <- nns[[i]]$index
+          }
+        }
+      } else {
+        if (!is.null(nns[[1]]$index)) {
+          res$nn_index <- nns[[1]]$index
+          if (is.null(res$metric[[1]])) {
+            # 31: Metric usually lists column indices or names, NULL means use all
+            # of them, but for loading the NN index we need the number of
+            # columns explicitly (we don't have access to the column dimension of
+            # the input data at load time)
+            if (res$nn_index$type %in% c("annoyv2", "hnswv1", "nndescentv1")) {
+              res$metric[[1]] <- list(ndim = res$nn_index$ndim)
+            }
+            else {
+              # To be sure of the dimensionality, fetch the first item from the
+              # index and see how many elements are in the returned vector.
+              if (!is.null(X)) {
+                rcppannoy <- get_rcppannoy(res$nn_index)
+                res$metric[[1]] <- list(ndim = length(rcppannoy$getItemsVector(0)))
+              } else {
+                res$metric[[1]] <- list()
+              }
+            }
+          }
+        } else {
+          if (nn_is_precomputed(nn_method)) {
+            tsmessage(
+              "Note: model requested with precomputed neighbors. ",
+              "For transforming new data, distance data must be ",
+              "provided separately"
+            )
+          }
+        }
+      }
+      if (!is.null(pca_models)) {
+        res$pca_models <- pca_models
+      }
+    }
+    if (ret_nn) {
+      res$nn <- list()
+      for (i in 1:nblocks) {
+        if (is.list(nns[[i]])) {
+          res$nn[[i]] <- list(idx = nns[[i]]$idx, dist = nns[[i]]$dist)
+          if (!is.null(Xnames) && nrow(res$nn[[i]]$idx) == length(Xnames)) {
+            row.names(res$nn[[i]]$idx) <- Xnames
+            row.names(res$nn[[i]]$dist) <- Xnames
+          }
+        } else if (is_sparse_matrix(nns[[i]])) {
+          res$nn[[i]] <- nns[[i]]
+          if (!is.null(Xnames) && nrow(res$nn[[i]]) == length(Xnames)) {
+            row.names(res$nn[[i]]) <- Xnames
+            colnames(res$nn[[i]]) <- Xnames
+          }
+        }
+      }
+      names(res$nn) <- names(nns)
+    }
+    if (ret_fgraph) {
+      if (method == "largevis") {
+        res$P <- V
+      } else {
+        res$fgraph <- V
+      }
+    }
+    if (ret_sigma) {
+      res$sigma <- sigma
+      res$rho <- rho
+      res$dint <- dint
+    }
+    if (ret_localr && !is.null(localr)) {
+      res$localr <- localr
+    }
+  } else {
+    res <- embedding
+  }
+
+  res
+}
+
+#' Save or Load a Model
+#'
+#' Functions to write a UMAP model to a file, and to restore.
+#'
+#' @param model a UMAP model create by \code{\link{umap}}.
+#' @param file name of the file where the model is to be saved or read from.
+#' @param unload if \code{TRUE}, unload all nearest neighbor indexes for the
+#'   model. The \code{model} will no longer be valid for use in
+#'   \code{\link{umap_transform}} and the temporary working directory used
+#'   during model saving will be deleted. You will need to reload the model with
+#'   \code{load_uwot} to use the model. If \code{FALSE}, then the model can be
+#'   re-used without reloading, but you must manually unload the NN index when
+#'   you are finished using it if you want to delete the temporary working
+#'   directory. To unload manually, use \code{\link{unload_uwot}}. The absolute
+#'   path of the working directory is found in the \code{mod_dir} item of the
+#'   return value.
+#' @param verbose if \code{TRUE}, log information to the console.
+#' @return \code{model} with one extra item: \code{mod_dir}, which contains the
+#'   path to the working directory. If \code{unload = FALSE} then this directory
+#'   still exists after this function returns, and can be cleaned up with
+#'   \code{\link{unload_uwot}}. If you don't care about cleaning up this
+#'   directory, or \code{unload = TRUE}, then you can ignore the return value.
+#' @examples
+#' iris_train <- iris[c(1:10, 51:60), ]
+#' iris_test <- iris[100:110, ]
+#'
+#' # create model
+#' model <- umap(iris_train, ret_model = TRUE, n_epochs = 20)
+#'
+#' # save without unloading: this leaves behind a temporary working directory
+#' model_file <- tempfile("iris_umap")
+#' model <- save_uwot(model, file = model_file)
+#'
+#' # The model can continue to be used
+#' test_embedding <- umap_transform(iris_test, model)
+#'
+#' # To manually unload the model from memory when finished and to clean up
+#' # the working directory (this doesn't touch your model file)
+#' unload_uwot(model)
+#'
+#' # At this point, model cannot be used with umap_transform, this would fail:
+#' # test_embedding2 <- umap_transform(iris_test, model)
+#'
+#' # restore the model: this also creates a temporary working directory
+#' model2 <- load_uwot(file = model_file)
+#' test_embedding2 <- umap_transform(iris_test, model2)
+#'
+#' # Unload and clean up the loaded model temp directory
+#' unload_uwot(model2)
+#'
+#' # clean up the model file
+#' unlink(model_file)
+#'
+#' # save with unloading: this deletes the temporary working directory but
+#' # doesn't allow the model to be re-used
+#' model3 <- umap(iris_train, ret_model = TRUE, n_epochs = 20)
+#' model_file3 <- tempfile("iris_umap")
+#' model3 <- save_uwot(model3, file = model_file3, unload = TRUE)
+#'
+#' @seealso \code{\link{load_uwot}}, \code{\link{unload_uwot}}
+#' @export
+save_uwot <- function(model, file, unload = FALSE, verbose = FALSE) {
+  if (!all_nn_indices_are_loaded(model)) {
+    stop("cannot save: NN index is unloaded")
+  }
+
+  wd <- getwd()
+  model_file <- abspath(file)
+  if (file.exists(model_file)) {
+    stop("model file ", model_file, " already exists")
+  }
+
+  tmp_model_file <- NULL
+  tryCatch(
+    {
+      # create directory to store files in
+      mod_dir <- tempfile(pattern = "dir")
+      tsmessage("Creating temp model dir ", mod_dir)
+      dir.create(mod_dir)
+
+      # create the tempdir/uwot subdirectory
+      uwot_dir <- file.path(mod_dir, "uwot")
+      tsmessage("Creating dir ", mod_dir)
+      dir.create(uwot_dir)
+
+      # save model file to tempdir/uwot/model
+      model_tmpfname <- file.path(uwot_dir, "model")
+      saveRDS(model, file = model_tmpfname)
+
+      # save each nn index inside tempdir/uwot/model
+      metrics <- names(model$metric)
+      n_metrics <- length(metrics)
+
+      for (i in 1:n_metrics) {
+        if (n_metrics == 1) {
+          nn_index <- model$nn_index
+        }
+        else {
+          nn_index <- model$nn_index[[i]]
+        }
+
+        if (startsWith(nn_index$type, "annoy") ||
+            startsWith(nn_index$type, "hnsw")) {
+
+            nn_tmpfname <- file.path(uwot_dir, paste0("nn", i))
+            nn_meta_tmpfname <- file.path(uwot_dir, paste0("nn-meta", i))
+            nn_index$ann$save(nn_tmpfname)
+
+            # save metadata wrapper around the index separately
+            meta_data <- nn_index
+            meta_data$ann <- NULL
+            saveRDS(meta_data, file = nn_meta_tmpfname)
+        }
+        else if (startsWith(nn_index$type, "nndescent")) {
+          nn_tmpfname <- file.path(uwot_dir, paste0("nn", i))
+          saveRDS(nn_index, file = nn_tmpfname)
+        }
+        else {
+          stop("unsupported nn index type: ", model$nn_index$type)
+        }
+      }
+
+      # archive the files under the temp dir into the single target file
+      # change directory so the archive only contains one directory
+      tmp_model_file <- abspath(file)
+      tsmessage("Changing to ", mod_dir)
+      setwd(mod_dir)
+      tsmessage("Creating ", tmp_model_file)
+
+      # #109: Windows 7 tar needs "--force-local" to avoid interpreting colon
+      # as indicating a remote machine
+      extra_flags <- ""
+      if (is_win7()) {
+        extra_flags <- "--force-local"
+      }
+      utils::tar(
+        tarfile = tmp_model_file,
+        extra_flags = extra_flags,
+        files = "uwot/"
+      )
+    },
+    finally = {
+      setwd(wd)
+      if (!is.null(tmp_model_file) && model_file != tmp_model_file) {
+        tsmessage("Copying ", tmp_model_file, " to ", model_file)
+        file.copy(from = tmp_model_file, to = model_file)
+      }
+      model$mod_dir <- mod_dir
+      if (unload) {
+        unload_uwot(model, cleanup = TRUE, verbose = verbose)
+      }
+    }
+  )
+  model
+}
+
+#' Save or Load a Model
+#'
+#' Functions to write a UMAP model to a file, and to restore.
+#'
+#' @param file name of the file where the model is to be saved or read from.
+#' @param verbose if \code{TRUE}, log information to the console.
+#' @return The model saved at \code{file}, for use with
+#'   \code{\link{umap_transform}}. Additionally, it contains an extra item:
+#'   \code{mod_dir}, which contains the path to the temporary working directory
+#'   used during loading of the model. This directory cannot be removed until
+#'   this model has been unloaded by using \code{\link{unload_uwot}}.
+#' @examples
+#' library(RSpectra)
+#'
+#' iris_train <- iris[c(1:10, 51:60), ]
+#' iris_test <- iris[100:110, ]
+#'
+#' # create model
+#' model <- umap(iris_train, ret_model = TRUE, n_epochs = 20)
+#'
+#' # save without unloading: this leaves behind a temporary working directory
+#' model_file <- tempfile("iris_umap")
+#' model <- save_uwot(model, file = model_file)
+#'
+#' # The model can continue to be used
+#' test_embedding <- umap_transform(iris_test, model)
+#'
+#' # To manually unload the model from memory when finished and to clean up
+#' # the working directory (this doesn't touch your model file)
+#' unload_uwot(model)
+#'
+#' # At this point, model cannot be used with umap_transform, this would fail:
+#' # test_embedding2 <- umap_transform(iris_test, model)
+#'
+#' # restore the model: this also creates a temporary working directory
+#' model2 <- load_uwot(file = model_file)
+#' test_embedding2 <- umap_transform(iris_test, model2)
+#'
+#' # Unload and clean up the loaded model temp directory
+#' unload_uwot(model2)
+#'
+#' # clean up the model file
+#' unlink(model_file)
+#'
+#' # save with unloading: this deletes the temporary working directory but
+#' # doesn't allow the model to be re-used
+#' model3 <- umap(iris_train, ret_model = TRUE, n_epochs = 20)
+#' model_file3 <- tempfile("iris_umap")
+#' model3 <- save_uwot(model3, file = model_file3, unload = TRUE)
+#'
+#' @seealso \code{\link{save_uwot}}, \code{\link{unload_uwot}}
+#' @export
+load_uwot <- function(file, verbose = FALSE) {
+  # create directory to store files in
+  mod_dir <- tempfile(pattern = "dir")
+  tsmessage("Creating temp directory ", mod_dir)
+  dir.create(mod_dir)
+
+  # #109: Windows 7 tar needs "--force-local" to avoid interpreting colon
+  # as indicating a remote machine
+  extras <- NULL
+  if (is_win7()) {
+    extras <- "--force-local"
+  }
+  utils::untar(abspath(file),
+    exdir = mod_dir,
+    extras = extras,
+    verbose = verbose
+  )
+
+  model_fname <- file.path(mod_dir, "uwot/model")
+  if (!file.exists(model_fname)) {
+    stop("Can't find model in ", file)
+  }
+  model <- readRDS(file = model_fname)
+
+  metrics <- names(model$metric)
+  n_metrics <- length(metrics)
+
+  nn_method <- model$nn_method
+  if (is.null(nn_method)) {
+    nn_method <- "annoy"
+  }
+  for (i in 1:n_metrics) {
+    nn_fname <- file.path(mod_dir, paste0("uwot/nn", i))
+    if (!file.exists(nn_fname)) {
+      stop("Can't find nearest neighbor index ", nn_fname, " in ", file)
+    }
+    metric <- metrics[[i]]
+    # 31: need to specify the index dimensionality when creating the index
+    if (is.list(model$metric[[i]])) {
+      # in case where there is only one metric, the value is a one-item list
+      # named 'ndim' giving the number of dimensions directly: all columns
+      # are used in this metric
+      ndim <- model$metric[[i]]$ndim
+    } else {
+      # otherwise, metric specifies the name or index used for each metric,
+      # so the dimension is the number of them
+      ndim <- length(model$metric[[i]])
+    }
+    if (nn_method == "annoy") {
+      annoy_metric <- metric
+      ann <- create_ann(annoy_metric, ndim = ndim)
+      ann$load(nn_fname)
+
+      idx <-
+        list(
+          ann = ann,
+          type = "annoyv1",
+          metric = annoy_metric,
+          ndim = ndim
+        )
+      if (n_metrics == 1) {
+        model$nn_index <- idx
+      } else {
+        model$nn_index[[i]] <- idx
+      }
+    }
+    else if (nn_method == "hnsw") {
+      ann <- hnsw_load(metric, ndim = ndim, filename = nn_fname)
+      nn_meta_tmpfname <- file.path(mod_dir, paste0("uwot/nn-meta", i))
+      idx <- readRDS(nn_meta_tmpfname)
+      idx$ann <- ann
+
+      if (n_metrics == 1) {
+        model$nn_index <- idx
+      } else {
+        model$nn_index[[i]] <- idx
+      }
+    }
+    else if (nn_method == "nndescent") {
+      idx <- readRDS(nn_fname)
+      if (n_metrics == 1) {
+        model$nn_index <- idx
+      } else {
+        model$nn_index[[i]] <- idx
+      }
+    }
+    else {
+      stop("Unknown nearest neighbor method ", nn_method)
+    }
+  }
+  model$mod_dir <- mod_dir
+
+  model
+}
+
+
+#' Unload a Model
+#'
+#' Unloads the UMAP model. This prevents the model being used with
+#' \code{\link{umap_transform}}, but allows the temporary working directory
+#' associated with saving or loading the model to be removed.
+#'
+#' @param model a UMAP model create by \code{\link{umap}}.
+#' @param cleanup if \code{TRUE}, attempt to delete the temporary working
+#'   directory that was used in either the save or load of the model.
+#' @param verbose if \code{TRUE}, log information to the console.
+#'
+#' @examples
+#' iris_train <- iris[c(1:10, 51:60), ]
+#' iris_test <- iris[100:110, ]
+#'
+#' # create model
+#' model <- umap(iris_train, ret_model = TRUE, n_epochs = 20)
+#'
+#' # save without unloading: this leaves behind a temporary working directory
+#' model_file <- tempfile("iris_umap")
+#' model <- save_uwot(model, file = model_file)
+#'
+#' # The model can continue to be used
+#' test_embedding <- umap_transform(iris_test, model)
+#'
+#' # To manually unload the model from memory when finished and to clean up
+#' # the working directory (this doesn't touch your model file)
+#' unload_uwot(model)
+#'
+#' # At this point, model cannot be used with umap_transform, this would fail:
+#' # test_embedding2 <- umap_transform(iris_test, model)
+#'
+#' # restore the model: this also creates a temporary working directory
+#' model2 <- load_uwot(file = model_file)
+#' test_embedding2 <- umap_transform(iris_test, model2)
+#'
+#' # Unload and clean up the loaded model temp directory
+#' unload_uwot(model2)
+#'
+#' # clean up the model file
+#' unlink(model_file)
+#'
+#' # save with unloading: this deletes the temporary working directory but
+#' # doesn't allow the model to be re-used
+#' model3 <- umap(iris_train, ret_model = TRUE, n_epochs = 20)
+#' model_file3 <- tempfile("iris_umap")
+#' model3 <- save_uwot(model3, file = model_file3, unload = TRUE)
+#'
+#' @seealso \code{\link{save_uwot}}, \code{\link{load_uwot}}
+#' @export
+unload_uwot <- function(model, cleanup = TRUE, verbose = FALSE) {
+  if (is.null(model$nn_method) || model$nn_method == "annoy") {
+    tsmessage("Unloading NN index: model will be invalid")
+    metrics <- names(model$metric)
+    n_metrics <- length(metrics)
+    for (i in 1:n_metrics) {
+      if (n_metrics == 1) {
+        rcppannoy <- get_rcppannoy(model$nn_index)
+        rcppannoy$unload()
+      } else {
+        rcppannoy <- get_rcppannoy(model$nn_index[[i]])
+        rcppannoy$unload()
+      }
+    }
+  }
+
+  if (cleanup) {
+    if (is.null(model$mod_dir)) {
+      tsmessage("Model is missing temp dir location, can't clean up")
+      return()
+    } else {
+      mod_dir <- model$mod_dir
+      if (!file.exists(mod_dir)) {
+        tsmessage("model temp dir location '", mod_dir, "' no longer exists")
+        return()
+      }
+      tsmessage("Deleting temp model dir ", mod_dir)
+      res <- unlink(mod_dir, recursive = TRUE)
+      if (res != 0) {
+        tsmessage("Unable to delete tempdir ", mod_dir)
+      }
+    }
+  }
+}
+
+all_nn_indices_are_loaded <- function(model) {
+  if (is.null(model$nn_index)) {
+    stop("Invalid model: has no 'nn_index'")
+  }
+  if (is.list(model$nn_index)) {
+    if (is.null(model$nn_index$type)) {
+      for (i in 1:length(model$nn_index)) {
+        rcppannoy <- get_rcppannoy(model$nn_index[[i]])
+        if (rcppannoy$getNTrees() == 0) {
+          return(FALSE)
+        }
+      }
+    }
+    else if (model$nn_index$type == "annoyv1") {
+      rcppannoy <- get_rcppannoy(model$nn_index)
+      if (rcppannoy$getNTrees() == 0) {
+        return(FALSE)
+      }
+    }
+    else if (model$nn_index$type == "hnswv1") {
+      return(TRUE)
+    }
+    else if (model$nn_index$type == "nndescentv1") {
+      return(TRUE)
+    }
+    else {
+      stop("Invalid model: has unknown 'nn_index' type ", model$nn_index$type)
+    }
+  } else {
+    rcppannoy <- get_rcppannoy(model$nn_index)
+    if (rcppannoy$getNTrees() == 0) {
+      return(FALSE)
+    }
+  }
+  TRUE
+}
+
+abspath <- function(filename) {
+  file.path(normalizePath(dirname(filename)), basename(filename))
+}
+
+# Half of whatever the C++ implementation thinks are the number of concurrent
+# threads supported, but at least 1
+default_num_threads <- function() {
+  max(1, hardware_concurrency() / 2)
+}
+
+# Get the number of vertices in X
+x2nv <- function(X) {
+  if (is.list(X)) {
+    if (!is.null(X$idx)) {
+      n_vertices <- x2nv(X$idx)
+    } else {
+      if (length(X) > 0) {
+        n_vertices <- x2nv(X[[1]])
+      } else {
+        stop("Can't find n_vertices for list X")
+      }
+    }
+  } else if (inherits(X, "dist")) {
+    n_vertices <- attr(X, "Size")
+  } else if (is_sparse_matrix(X)) {
+    # older code path where distance matrix was part of X rather than nn_method
+    # used nrow, but transform was not supported so nrow == ncol
+    n_vertices <- ncol(X)
+  } else if (methods::is(X, "data.frame") || methods::is(X, "matrix")) {
+    n_vertices <- nrow(X)
+  } else if (is.numeric(X)) {
+    n_vertices <- length(X)
+  } else {
+    stop("Can't find number of vertices for X of type '", class(X)[1], "'")
+  }
+  n_vertices
+}
+
+data2set <- function(X,
+                     Xcat,
+                     n_neighbors,
+                     metrics,
+                     nn_method,
+                     n_trees,
+                     search_k,
+                     method,
+                     set_op_mix_ratio,
+                     local_connectivity,
+                     bandwidth,
+                     perplexity,
+                     kernel,
+                     ret_sigma,
+                     n_threads,
+                     n_build_threads,
+                     grain_size,
+                     ret_model,
+                     n_vertices = x2nv(X),
+                     tmpdir = tempdir(),
+                     pca = NULL,
+                     pca_center = TRUE,
+                     pca_method = "irlba",
+                     nn_args = list(),
+                     sparse_is_distance = TRUE,
+                     verbose = FALSE) {
+  V <- NULL
+  nns <- list()
+  nblocks <- length(metrics)
+  sigma <- NULL
+  # Check for precalculated NN data in nn_method
+  if (is.list(nn_method)) {
+    if (is.null(nn_method$idx)) {
+      nblocks <- length(nn_method)
+      if (nblocks == 0) {
+        stop("Incorrect format for precalculated neighbor data")
+      }
+    } else {
+      nblocks <- 1
+      # wrap nn data in a list so data is always a list of lists
+      nn_method <- list(nn_method)
+    }
+    metrics <- replicate(nblocks, NULL, simplify = FALSE)
+    names(metrics) <- rep("precomputed", nblocks)
+  }
+
+
+  if (nblocks > 1) {
+    tsmessage("Found ", nblocks, " blocks of data")
+  }
+  mnames <- tolower(names(metrics))
+  if (is.null(nn_method)) {
+    if (methods::is(X, "matrix")) {
+      if (n_vertices < 4096 &&
+        !ret_model &&
+        all(mnames == "euclidean")) {
+        tsmessage("Using FNN for neighbor search, n_neighbors = ", n_neighbors)
+        nn_method <- "fnn"
+      } else {
+        tsmessage("Using Annoy for neighbor search, n_neighbors = ", n_neighbors)
+        nn_method <- "annoy"
+      }
+    }
+    else {
+      # It's a dist, or an actual distance matrix (sparse or triangular)
+      nn_method <- "matrix"
+    }
+  }
+
+  pca_models <- list()
+  for (i in 1:nblocks) {
+    metric <- mnames[[i]]
+    if (is.character(nn_method) && nn_method == "annoy") {
+      metric <- match.arg(metric, c(
+        "euclidean", "cosine", "manhattan",
+        "hamming", "correlation", "precomputed"
+      ))
+    }
+    # Defaults for this block which can be overridden
+    pca_i <- pca
+    pca_center_i <- pca_center
+
+    subset <- metrics[[i]]
+    if (is.null(subset)) {
+      Xsub <- X
+    } else if (is.list(subset)) {
+      # e.g. "euclidean" = list(1:10, pca_center = FALSE),
+      lsres <- lsplit_unnamed(subset)
+      if (is.null(lsres$unnamed)) {
+        stop("Error: no subset provided for block ", i)
+      }
+      if (length(lsres$unnamed) != 1) {
+        stop("Error: only one unnamed item should be provided for block ", i)
+      }
+      subset <- lsres$unnamed[[1]]
+
+      # possible overrides
+      if (!is.null(lsres$named)) {
+        lsnamed <- lsres$named
+        lsnames <- names(lsnamed)
+        if (!is.null(lsnamed$pca_center)) {
+          pca_center_i <- lsnamed$pca_center
+        }
+        # PCA argument can be NULL, so need to check if it was explicitly provided
+        if ("pca" %in% lsnames) {
+          pca_i <- lsnamed$pca
+        }
+      }
+      Xsub <- X[, subset, drop = FALSE]
+    } else {
+      Xsub <- X[, subset, drop = FALSE]
+    }
+
+    if (!is.null(X) && is.matrix(X)) {
+      block_size <- ncol(Xsub)
+      if (block_size == 0) {
+        stop("Block ", i, " has zero size")
+      }
+      if (nblocks > 1) {
+        tsmessage(
+          "Processing block ", i, " of ", nblocks,
+          " with size ", block_size,
+          " using metric '", metric, "'"
+        )
+      }
+    } else {
+      # X is NULL or dist or something like that
+      if (nblocks > 1) {
+        tsmessage(
+          "Processing block ", i, " of ", nblocks,
+          " using metric '", metric, "'"
+        )
+      }
+    }
+
+    if (!is.null(pca_i) && is.matrix(X) && metric != "hamming" &&
+      ncol(X) > pca_i && nrow(X) > pca_i) {
+      tsmessage("Reducing column dimension to ", pca_i, " via PCA")
+      pca_res <- pca_init(Xsub, pca_i,
+        ret_extra = ret_model,
+        center = pca_center_i,
+        pca_method = pca_method,
+        verbose = verbose
+      )
+      if (ret_model) {
+        Xsub <- pca_res$scores
+        pca_models[[as.character(i)]] <- pca_res[c("center", "rotation")]
+        pca_res <- NULL
+      } else {
+        Xsub <- pca_res
+      }
+    }
+
+    nn_sub <- nn_method
+    # Extract this block of nn data from list of lists
+    if (metric == "precomputed") {
+      nn_sub <- nn_method[[i]]
+      n_neighbors <- NULL
+    }
+
+    x2set_res <- x2set(
+      Xsub,
+      n_neighbors,
+      metric,
+      nn_method = nn_sub,
+      n_trees,
+      search_k,
+      method,
+      set_op_mix_ratio,
+      local_connectivity,
+      bandwidth,
+      perplexity,
+      kernel,
+      ret_sigma,
+      n_threads,
+      n_build_threads,
+      grain_size,
+      ret_model,
+      n_vertices = n_vertices,
+      nn_args = nn_args,
+      tmpdir = tmpdir,
+      sparse_is_distance = sparse_is_distance,
+      verbose = verbose
+    )
+    Vblock <- x2set_res$V
+    nn <- x2set_res$nn
+    nns[[i]] <- nn
+    names(nns)[[i]] <- metric
+    if (is.null(V)) {
+      V <- Vblock
+    } else {
+      # TODO: should at least offer the option to reset the local metric here
+      # TODO: make , reset_local_metric = TRUE the default (breaking change)
+      V <- set_intersect(V, Vblock, weight = 0.5, reset_connectivity = TRUE)
+    }
+    if (ret_sigma && is.null(sigma)) {
+      # No idea how to combine different neighborhood sizes so just return the
+      # first set
+      sigma <- x2set_res$sigma
+      rho <- x2set_res$rho
+      dint <- x2set_res$dint
+    }
+  }
+
+  if (!is.null(Xcat)) {
+    V <- categorical_intersection_df(Xcat, V, weight = 0.5, verbose = verbose)
+  }
+
+  res <- list(V = V, nns = nns, pca_models = pca_models)
+  if (!is.null(sigma)) {
+    res$sigma <- sigma
+    res$rho <- rho
+    res$dint <- dint
+  }
+  res
+}
+
+x2nn <- function(X,
+                 n_neighbors,
+                 metric,
+                 nn_method,
+                 n_trees,
+                 search_k,
+                 tmpdir = tempdir(),
+                 n_threads,
+                 n_build_threads,
+                 grain_size,
+                 ret_model,
+                 n_vertices = x2nv(X),
+                 nn_args = list(),
+                 sparse_is_distance = TRUE,
+                 verbose = FALSE) {
+  if (is.list(nn_method)) {
+    validate_nn(nn_method, n_vertices)
+    nn <- nn_method
+  } else {
+    nn_method <-
+      match.arg(tolower(nn_method),
+                c("annoy", "fnn", "matrix", "hnsw", "nndescent"))
+    if (nn_method == "fnn" && metric != "euclidean") {
+      stop(
+        "nn_method = 'FNN' is only compatible with distance metric ",
+        "'euclidean'"
+      )
+    }
+    if (nn_method == "fnn" && ret_model) {
+      stop("nn_method = 'FNN' is incompatible with ret_model = TRUE")
+    }
+    nn <- find_nn(
+      X,
+      n_neighbors,
+      method = nn_method,
+      metric = metric,
+      n_trees = n_trees,
+      search_k = search_k,
+      nn_args = nn_args,
+      tmpdir = tmpdir,
+      n_threads = n_threads,
+      n_build_threads = n_build_threads,
+      grain_size = grain_size,
+      ret_index = ret_model,
+      sparse_is_distance = sparse_is_distance,
+      verbose = verbose
+    )
+  }
+  nn
+}
+
+validate_nn <- function(nn_method, n_vertices) {
+  if (!is.matrix(nn_method$idx)) {
+    stop("Couldn't find precalculated 'idx' matrix")
+  }
+  if (nrow(nn_method$idx) != n_vertices) {
+    stop(
+      "Precalculated 'idx' matrix must have ", n_vertices,
+      " rows, but found ", nrow(nn_method$idx)
+    )
+  }
+
+  if (!is.matrix(nn_method$dist)) {
+    stop("Couldn't find precalculated 'dist' matrix")
+  }
+  if (nrow(nn_method$idx) != n_vertices) {
+    stop("Precalculated 'dist' matrix must have ", n_vertices, " rows, but
+         found ", nrow(nn_method$dist))
+  }
+  if (ncol(nn_method$dist) != ncol(nn_method$idx)) {
+    stop("Precalculated 'dist' matrix must have ", ncol(nn_method$idx), " cols, but
+         found ", ncol(nn_method$dist))
+  }
+}
+
+nn2set <- function(method, nn,
+                   set_op_mix_ratio, local_connectivity, bandwidth,
+                   perplexity, kernel,
+                   ret_sigma,
+                   n_threads, grain_size,
+                   verbose = FALSE) {
+  sigma <- NULL
+  res <- list()
+  if (method == "largevis") {
+    n_vertices <- nrow(nn$dist)
+    if (perplexity >= n_vertices) {
+      stop("perplexity can be no larger than ", n_vertices - 1)
+    }
+    Vres <- perplexity_similarities(
+      nn = nn, perplexity = perplexity,
+      ret_sigma = ret_sigma,
+      n_threads = n_threads,
+      grain_size = grain_size,
+      kernel = kernel,
+      verbose = verbose
+    )
+    res$V <- Vres$matrix
+    if (ret_sigma && !is.null(Vres$sigma)) {
+      res$sigma <- Vres$sigma
+      res$dint <- Vres$dint
+    }
+  } else {
+    Vres <- fuzzy_simplicial_set(
+      nn = nn,
+      set_op_mix_ratio = set_op_mix_ratio,
+      local_connectivity = local_connectivity,
+      bandwidth = bandwidth,
+      ret_sigma = ret_sigma,
+      n_threads = n_threads,
+      grain_size = grain_size,
+      verbose = verbose
+    )
+    if (ret_sigma) {
+      res$V <- Vres$matrix
+      res$sigma <- Vres$sigma
+      res$rho <- Vres$rho
+    } else {
+      res$V <- Vres
+    }
+  }
+  res
+}
+
+x2set <- function(X,
+                  n_neighbors,
+                  metric,
+                  nn_method,
+                  n_trees,
+                  search_k,
+                  method,
+                  set_op_mix_ratio,
+                  local_connectivity,
+                  bandwidth,
+                  perplexity,
+                  kernel,
+                  ret_sigma,
+                  n_threads,
+                  n_build_threads,
+                  grain_size,
+                  ret_model,
+                  n_vertices = x2nv(X),
+                  tmpdir = tempdir(),
+                  nn_args = list(),
+                  sparse_is_distance = TRUE,
+                  verbose = FALSE) {
+  if (is_sparse_matrix(nn_method)) {
+    nn <- nn_method
+    if (nrow(nn) != ncol(nn)) {
+      stop("Sparse distance matrix must have same number of rows and cols")
+    }
+    if (nrow(nn) != n_vertices) {
+      stop("Sparse distance matrix must have same dimensions as input data")
+    }
+  } else {
+    nn <- x2nn(
+      X,
+      n_neighbors = n_neighbors,
+      metric = metric,
+      nn_method = nn_method,
+      n_trees = n_trees,
+      search_k = search_k,
+      tmpdir = tmpdir,
+      n_threads = n_threads,
+      n_build_threads = n_build_threads,
+      grain_size = grain_size,
+      ret_model = ret_model,
+      nn_args = nn_args,
+      n_vertices = n_vertices,
+      sparse_is_distance = sparse_is_distance,
+      verbose = verbose
+    )
+    if (any(is.infinite(nn$dist))) {
+      stop("Infinite distances found in nearest neighbors")
+    }
+  }
+  gc()
+
+  nn2set_res <- nn2set(
+    method,
+    nn,
+    set_op_mix_ratio,
+    local_connectivity,
+    bandwidth,
+    perplexity,
+    kernel,
+    ret_sigma,
+    n_threads,
+    grain_size,
+    verbose = verbose
+  )
+  V <- nn2set_res$V
+
+  if (any(is.na(V))) {
+    stop("Non-finite entries in the input matrix")
+  }
+  gc()
+
+  res <- list(
+    nn = nn,
+    V = V
+  )
+  if (ret_sigma && !is.null(nn2set_res$sigma)) {
+    res$sigma <- nn2set_res$sigma
+    res$rho <- nn2set_res$rho
+    res$dint <- nn2set_res$dint
+  }
+  res
+}
+
+set_intersect <- function(A, B, weight = 0.5, reset_connectivity = TRUE,
+                          reset_local_metric = FALSE, n_threads = NULL,
+                          verbose = FALSE) {
+  A <- general_simplicial_set_intersection(
+    A, B, weight
+  )
+  A <- Matrix::drop0(A)
+  # https://github.com/lmcinnes/umap/issues/58#issuecomment-437633658
+  # For now always reset
+  if (reset_connectivity) {
+    A <- reset_local_connectivity(A,
+      reset_local_metric = reset_local_metric,
+      n_threads = n_threads, verbose = verbose
+    )
+  }
+  A
+}
+
+categorical_intersection_df <- function(X, V, weight = 0.5, verbose = FALSE) {
+  tsmessage(
+    "Carrying out categorical intersection for ",
+    pluralize("column", ncol(X))
+  )
+  for (i in 1:ncol(X)) {
+    V <- categorical_intersection(X[, i], V,
+      weight = weight,
+      verbose = (verbose && i == 1)
+    )
+  }
+  V
+}
+
+categorical_intersection <- function(x, V, weight, verbose = FALSE) {
+  if (is.null(V)) {
+    stop("V cannot be null for categorical intersection")
+  }
+  if (weight < 1.0) {
+    far_dist <- 2.5 * (1.0 / (1.0 - weight))
+  } else {
+    far_dist <- 1.0e12
+  }
+  tsmessage(
+    "Applying categorical set intersection, weight = ", formatC(weight),
+    " far distance = ", formatC(far_dist)
+  )
+
+  V <- categorical_simplicial_set_intersection(V, x,
+    far_dist = far_dist,
+    verbose = verbose
+  )
+  V
+}
+
+
+# Creates the number of epochs per sample for each weight
+# weights are the non-zero input affinities (1-simplex)
+# n_epoch the total number of epochs
+# There is an inverse relationship between the weights and the return vector.
+make_epochs_per_sample <- function(weights, n_epochs) {
+  result <- rep(-1, length(weights))
+  n_samples <- n_epochs * (weights / max(weights))
+  result[n_samples > 0] <- n_epochs / n_samples[n_samples > 0]
+  result
+}
+
+# Create the a/b parameters from spread and min_dist
+find_ab_params <- function(spread = 1, min_dist = 0.001) {
+  xv <- seq(from = 0, to = spread * 3, length.out = 300)
+  yv <- rep(0, length(xv))
+  yv[xv < min_dist] <- 1
+  yv[xv >= min_dist] <- exp(-(xv[xv >= min_dist] - min_dist) / spread)
+  result <- try(
+    {
+      stats::nls(yv ~ 1 / (1 + a * xv^(2 * b)),
+        start = list(a = 1, b = 1)
+      )$m$getPars()
+    },
+    silent = TRUE
+  )
+  if (inherits(result, "try-error")) {
+    stop(
+      "Can't find a, b for provided spread = ", spread,
+      " min_dist = ", min_dist
+    )
+  }
+  result
+}
+
+# The default number of edge samples used by LargeVis
+lvish_samples <- function(n_vertices) {
+  n_samples <- 0
+
+  if (n_vertices < 10000) {
+    n_samples <- 1000
+  } else if (n_vertices < 1000000) {
+    n_samples <- (n_vertices - 10000) * 9000 / (1000000 - 10000) + 1000
+  } else {
+    n_samples <- n_vertices / 100
+  }
+
+  round(n_samples * 1000000)
+}
+
+# Returns the number of epochs required to generate the default number of edge samples
+# used in LargeVis
+lvish_epochs <- function(n_vertices, V) {
+  n_samples <- lvish_samples(n_vertices)
+  round(n_samples * max(V) / sum(V))
+}
+
+# Scale X according to various strategies
+scale_input <- function(X, scale_type, ret_model = FALSE, verbose = FALSE) {
+  if (is.null(scale_type)) {
+    scale_type <- "none"
+  } else if (is.logical(scale_type)) {
+    scale_type <- ifelse(scale_type, "scale", "none")
+  } else if (tolower(scale_type) == "z") {
+    scale_type <- "scale"
+  }
+
+  scale_type <- match.arg(
+    tolower(scale_type),
+    c("none", "scale", "range", "colrange", "maxabs")
+  )
+  switch(scale_type,
+    range = {
+      tsmessage("Range scaling X")
+      min_X <- min(X)
+      X <- X - min_X
+
+      max_X <- max(X)
+      X <- X / max_X
+
+      if (ret_model) {
+        attr(X, "scaled:range:min") <- min_X
+        attr(X, "scaled:range:max") <- max_X
+      }
+    },
+    colrange = {
+      tsmessage("Column range scaling X")
+      min_X <- apply(X, 2, min)
+      X <- sweep(X, 2, min_X)
+
+      max_X <- apply(X, 2, max)
+      X <- sweep(X, 2, max_X, `/`)
+
+      if (ret_model) {
+        attr(X, "scaled:colrange:min") <- min_X
+        attr(X, "scaled:colrange:max") <- max_X
+      }
+    },
+    maxabs = {
+      tsmessage("Normalizing by max-abs")
+      X <- base::scale(X, scale = FALSE)
+      max_abs <- max(abs(X))
+      X <- X / max_abs
+
+      if (ret_model) {
+        attr(X, "scaled:maxabs") <- max_abs
+      }
+    },
+    scale = {
+      tsmessage("Scaling to zero mean and unit variance")
+
+      varf <- function(x) {
+        sum((x - sum(x) / length(x))^2)
+      }
+      non_zero_var_cols <- apply(X, 2, varf) >= .Machine$double.xmin
+
+      if (length(non_zero_var_cols) == 0) {
+        stop("Matrix has zero variance")
+      }
+      X <- X[, non_zero_var_cols]
+      tsmessage("Kept ", ncol(X), " non-zero-variance columns")
+      X <- base::scale(X, scale = TRUE)
+
+      if (ret_model) {
+        attr(X, "scaled:nzvcols") <- which(non_zero_var_cols)
+      }
+    }
+  )
+  X
+}
+
+attr_to_scale_info <- function(X) {
+  Xattr <- attributes(X)
+  Xattr <- Xattr[startsWith(names(Xattr), "scaled:")]
+  if (length(Xattr) == 0) {
+    Xattr <- NULL
+  }
+  Xattr
+}
+
+get_opt_args <- function(opt_args, alpha) {
+  default_batch_opt <- "adam"
+  default_opt_args <- list(
+    sgd = list(alpha = alpha),
+    adam = list(alpha = alpha, beta1 = 0.5, beta2 = 0.9, eps = 1e-7)
+  )
+  if (is.null(opt_args)) {
+    opt_args <- list()
+  }
+  if (is.null(opt_args$method)) {
+    opt_args$method <- "adam"
+  }
+  if (!(opt_args$method %in% names(default_opt_args))) {
+    stop("Unknown optimization method '", opt_args$method, "'")
+  }
+  lmerge(default_opt_args[[opt_args$method]], opt_args)
+}
+
+# Takes local radii from the input dimension and converts to approximate
+# densities in the output space by mapping them to a vector of a parameters
+# as used in the UMAP output weight: 1/(1 + a + d^2b).
+# Based on testing a rough range of usable a values is 0.01-100. To get that
+# we want each a value to be the product of the local density of i and j, so
+# a = sqrt(a_i * a_j)
+# Also, we want dens_scale to control the spread of a values and for
+# dens_scale = 0, the vector of a_i give the the user-selected scalar value of
+# a, so we scale the log of the reciprocal of localr to be within [log(a * 1e-(2
+# * dens_scale)) ... log(a * 1e(2 * dens_scale))] We take the sqrt of the a_i in
+# this function to avoid repeatedly calling it inside the optimization loop.
+scale_radii <- function(localr, dens_scale, a) {
+  log_denso <- -log(localr)
+  min_densl <- a * (10^(-2 * dens_scale))
+  log_min_densl <- log(min_densl)
+  max_densl <- a * (10^(2 * dens_scale))
+  log_max_densl <- log(max_densl)
+  log_denso_scale <- range_scale(log_denso, log_min_densl, log_max_densl)
+  sqrt(exp(log_denso_scale))
+}
+
+#' @useDynLib uwotlite, .registration=TRUE
+#' @importFrom Rcpp sourceCpp
+.onUnload <- function(libpath) {
+  library.dynam.unload("uwotlite", libpath)
+}
+
+# Remove scaling attributes from a matrix
+# if the `scale` parameter is set then these attributes are assumed to have
+# been applied by uwot's internals and the equivalent scaling will be applied
+# to new data in umap_transform. However, these attributes could have been
+# applied by manually scaling the data before running any code in uwot, in which
+# case we should not save them as part of the model. This function is called
+# before applying any other scaling
+remove_scaling_attrs <- function(X) {
+  uwot_attrs <- c(
+    "scaled:range:min",
+    "scaled:range:max",
+    "scaled:colrange:min",
+    "scaled:colrange:max",
+    "scaled:maxabs",
+    "scaled:nzvcols",
+    "scaled:center",
+    "scaled:scale"
+  )
+  attrs <- names(attributes(X))
+  for (attr in attrs) {
+    if (attr %in% uwot_attrs) {
+      attributes(X)[[attr]] <- NULL
+    }
+  }
+  X
+}

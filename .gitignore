@@ -1,0 +1,9 @@
+.Rproj.user
+.Rhistory
+.RData
+uwot.Rproj
+**/*DONTCHECKMEIN*
+docs
+inst/doc
+
+/.quarto/
