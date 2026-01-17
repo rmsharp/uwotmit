@@ -136,6 +136,8 @@ original author and contributors.
 
 - [Fine-tuning UMAP
   Visualizations](https://rmsharp.github.io/uwotlite/articles/abparams.md):
+- [Dimensionality Reduction for Encoded Categorical Data with
+  uwotlite](https://rmsharp.github.io/uwotlite/articles/categorical-umap.md):
 - [Embedding New
   Data](https://rmsharp.github.io/uwotlite/articles/embedding-new-data.md):
 - [Fast SGD
