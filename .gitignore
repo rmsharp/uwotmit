@@ -7,3 +7,5 @@ docs
 inst/doc
 
 /.quarto/
+uwotlite.Rcheck/
+*.tar.gz

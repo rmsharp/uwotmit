@@ -1,2 +1,0 @@
-PKG_CXXFLAGS = -DRCPP_NO_RTTI
-PKG_CPPFLAGS = -I../inst/include/
