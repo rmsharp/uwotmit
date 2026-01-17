@@ -39,6 +39,7 @@ Suggests:
     ggplot2,
     knitr,
     modeldata,
+    quarto,
     RcppHNSW,
     rmarkdown,
     rnndescent,
@@ -50,7 +51,8 @@ LinkingTo:
     RcppAnnoy,
     RcppProgress
 VignetteBuilder:
-    knitr
+    knitr,
+    quarto
 Config/Needs/website: rmarkdown
 Encoding: UTF-8
 RoxygenNote: 7.3.3
