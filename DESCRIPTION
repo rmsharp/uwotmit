@@ -35,10 +35,14 @@ Imports:
 Suggests:
     bigstatsr,
     covr,
+    dplyr,
+    ggplot2,
     knitr,
+    modeldata,
     RcppHNSW,
     rmarkdown,
     rnndescent,
+    scales,
     testthat
 LinkingTo:
     sitmo,
