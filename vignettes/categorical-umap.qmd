@@ -38,7 +38,7 @@ This vignette demonstrates UMAP (Uniform Manifold Approximation and Projection) 
 
 ## Introduction
 
-While Chapter 17 of TMWR focuses on encoding categorical variables into numeric representations, another common preprocessing task is *dimensionality reduction*—transforming many features into fewer features while preserving important structure.
+While Chapter 17 of TMWR focuses on encoding categorical variables into numeric representations, another common preprocessing task is *dimensionality reduction*---transforming many features into fewer features while preserving important structure.
 
 UMAP is a nonlinear dimensionality reduction technique that:
 
@@ -95,7 +95,7 @@ ames_matrix <- as.matrix(ames_numeric)
 dim(ames_matrix)
 ```
 
-The matrix contains our observations and 16 numeric features.
+We have `r nrow(ames_matrix)` observations and `r ncol(ames_matrix)` numeric features.
 
 ## Basic UMAP
 
@@ -143,7 +143,7 @@ ggplot(umap_df, aes(UMAP1, UMAP2, color = Sale_Price)) +
   coord_fixed()
 ```
 
-The UMAP projection reveals structure in the data—houses with similar characteristics cluster together, and there's a gradient of sale prices across the embedding.
+The UMAP projection reveals structure in the data---houses with similar characteristics cluster together, and there's a gradient of sale prices across the embedding.
 
 ### Colored by Neighborhood
 
