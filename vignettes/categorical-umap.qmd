@@ -26,8 +26,8 @@ knitr::opts_chunk$set(
   warning = FALSE
 )
 
-# Check for required packages
-required_pkgs <- c("modeldata", "ggplot2", "dplyr", "scales")
+# Check for required packages (including uwotlite itself for vignette building)
+required_pkgs <- c("uwotlite", "modeldata", "ggplot2", "dplyr", "scales")
 have_pkgs <- vapply(required_pkgs, requireNamespace, logical(1), quietly = TRUE)
 if (!all(have_pkgs)) {
   knitr::opts_chunk$set(eval = FALSE)
