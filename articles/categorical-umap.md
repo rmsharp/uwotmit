@@ -344,5 +344,4 @@ toolkit for handling complex feature engineering tasks.
 
 - [UMAP paper](https://arxiv.org/abs/1802.03426)
 - [Understanding UMAP](https://pair-code.github.io/understanding-umap/)
-- [embedmit categorical encoding
-  vignette](https://rmsharp.github.io/embedmit/)
+- [embedmit package](https://github.com/rmsharp/embedmit)
