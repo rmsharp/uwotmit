@@ -73,7 +73,7 @@ dim(ames_matrix)
 #> [1] 2344   16
 ```
 
-We have 2344 observations and 16 numeric features.
+The matrix contains our observations and 16 numeric features.
 
 ## Basic UMAP
 
