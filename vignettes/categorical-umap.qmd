@@ -95,7 +95,7 @@ ames_matrix <- as.matrix(ames_numeric)
 dim(ames_matrix)
 ```
 
-We have `r nrow(ames_matrix)` observations and `r ncol(ames_matrix)` numeric features.
+The matrix contains our observations and 16 numeric features.
 
 ## Basic UMAP
 
