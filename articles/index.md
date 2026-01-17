@@ -5,6 +5,8 @@
 - [Fine-tuning UMAP
   Visualizations](https://rmsharp.github.io/uwotlite/articles/abparams.md):
 - [Dimensionality Reduction with
+  UMAP](https://rmsharp.github.io/uwotlite/articles/categorical-umap-01.md):
+- [Dimensionality Reduction with
   UMAP](https://rmsharp.github.io/uwotlite/articles/categorical-umap.md):
 - [Embedding New
   Data](https://rmsharp.github.io/uwotlite/articles/embedding-new-data.md):
