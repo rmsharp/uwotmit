@@ -630,7 +630,7 @@
 #' Laplacian eigenmaps and spectral techniques for embedding and clustering.
 #' In \emph{Advances in neural information processing systems}
 #' (pp. 585-591).
-#' \url{http://papers.nips.cc/paper/1961-laplacian-eigenmaps-and-spectral-techniques-for-embedding-and-clustering.pdf}
+#' \url{https://papers.nips.cc/paper/1961-laplacian-eigenmaps-and-spectral-techniques-for-embedding-and-clustering.pdf}
 #'
 #' Böhm, J. N., Berens, P., & Kobak, D. (2020).
 #' A unifying perspective on neighbor embeddings along the attraction-repulsion spectrum.
@@ -1392,7 +1392,7 @@ umap <- function(X, n_neighbors = 15, n_components = 2, metric = "euclidean",
 #' Laplacian eigenmaps and spectral techniques for embedding and clustering.
 #' In \emph{Advances in neural information processing systems}
 #' (pp. 585-591).
-#' \url{http://papers.nips.cc/paper/1961-laplacian-eigenmaps-and-spectral-techniques-for-embedding-and-clustering.pdf}
+#' \url{https://papers.nips.cc/paper/1961-laplacian-eigenmaps-and-spectral-techniques-for-embedding-and-clustering.pdf}
 #'
 #' Böhm, J. N., Berens, P., & Kobak, D. (2020).
 #' A unifying perspective on neighbor embeddings along the attraction-repulsion spectrum.
@@ -2010,7 +2010,7 @@ tumap <- function(X, n_neighbors = 15, n_components = 2, metric = "euclidean",
 #' Laplacian eigenmaps and spectral techniques for embedding and clustering.
 #' In \emph{Advances in neural information processing systems}
 #' (pp. 585-591).
-#' \url{http://papers.nips.cc/paper/1961-laplacian-eigenmaps-and-spectral-techniques-for-embedding-and-clustering.pdf}
+#' \url{https://papers.nips.cc/paper/1961-laplacian-eigenmaps-and-spectral-techniques-for-embedding-and-clustering.pdf}
 #'
 #' Böhm, J. N., Berens, P., & Kobak, D. (2020).
 #' A unifying perspective on neighbor embeddings along the attraction-repulsion spectrum.
