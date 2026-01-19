@@ -241,3 +241,43 @@ uwotlite/
 | R/uwot.R, R/umap2.R | Minor | Package name references |
 
 **Total substantive code changes:** ~50 lines in src/rng.h
+
+---
+
+## 2026-01-19: Code Coverage Analysis
+
+### Summary
+Ran covr code coverage analysis on all 4 packages (embed, embedmit, uwot, uwotlite) to identify areas for improvement.
+
+### Coverage Results
+
+| Package  | Coverage | Tests |
+|----------|----------|-------|
+| embed    | 72.99%   | 688   |
+| embedmit | ~73%*    | 833   |
+| uwot     | 83.23%   | 963   |
+| uwotlite | 85.33%   | 1140  |
+
+### File-Level Coverage (uwot/uwotlite)
+
+| File | uwot | uwotlite | Change |
+|------|------|----------|--------|
+| R/bigstatsr_init.R | 0.00% | 0.00% | - |
+| R/umap2.R | 0.00% | 76.09% | **+76%** |
+| R/rspectra_init.R | 49.23% | 49.23% | - |
+| R/supervised.R | 59.77% | 59.77% | - |
+| R/init.R | 60.32% | 60.32% | - |
+| R/uwot.R | 91.61% | 92.40% | +0.8% |
+
+### Major Improvement Opportunities
+
+1. **bigstatsr integration (0%)** - Large matrix support completely untested
+2. **Supervised UMAP (~60%)** - Target-aware UMAP needs more test cases
+3. **Initialization methods (~60%)** - Spectral, random initialization paths
+4. **rspectra_init (~49%)** - RSpectra integration needs tests
+
+### Fork Improvements
+
+uwotlite shows improved coverage over uwot:
+- R/umap2.R: 0% → 76.09% (+76 percentage points)
+- Overall: 83.23% → 85.33% (+2.1 percentage points)
