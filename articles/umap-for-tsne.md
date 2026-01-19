@@ -242,7 +242,7 @@ to their degree ^ 0.75, where the degree of the vertex is the sum of the
 weights of the edges incident to them. There doesn’t seem to be a
 theoretical reason to use the degree ^ 0.75. It’s based on results from
 the field of word embeddings: the LargeVis authors reference a
-[skip-gram](http://papers.nips.cc/paper/5021-distributed-representations-of-words-andphrases)
+[skip-gram](https://papers.nips.cc/paper/5021-distributed-representations-of-words-andphrases)
 paper, but the same power also shows up in
 [GloVE](https://nlp.stanford.edu/projects/glove/). In both cases it is
 justified purely empirically. The `uwot` version of LargeVis (`lvish`)
@@ -272,7 +272,7 @@ number of nearest neighbors.
 
 *January 1 2020:* I assume there is a connection here with the local
 scaling advocated for [self-tuning spectral
-clustering](http://papers.nips.cc/paper/2619-self-tuning-spectral-clustering),
+clustering](https://papers.nips.cc/paper/2619-self-tuning-spectral-clustering),
 given that spectral decomposition of the affinity graph is the default
 initialization method for UMAP.
 
