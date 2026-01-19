@@ -136,3 +136,74 @@ make install         # Install package locally
 - `Makefile` - Build and test automation
 - `scripts/precommit-tests.sh` - Pre-commit test script
 - `.githooks/pre-commit` - Git pre-commit hook
+
+---
+
+## 2026-01-18: Comprehensive Coverage Gap Tests
+
+### Summary
+Analyzed uwotlite for test coverage gaps and implemented comprehensive tests for high and medium priority gaps.
+
+### Work Completed
+Created `tests/testthat/test-coverage_gaps.R` with 94 tests covering:
+- Seed edge cases (0, negative, boundary values)
+- Invalid rng_type handling
+- Parameter validation
+- umap_transform edge cases
+- Model save/load functionality
+
+### Test Results After Implementation
+- **uwotlite:** 1140 passed, 0 failed, 0 warnings, 1 skip
+
+---
+
+## Package Structure Summary
+
+### uwotlite Final Structure
+
+```
+uwotlite/
+├── R/                              # 13 source files
+│   ├── uwot.R                      # Main UMAP functions
+│   ├── umap2.R                     # Alternative UMAP interface
+│   ├── transform.R                 # Transform new data
+│   ├── neighbors.R                 # Nearest neighbor search
+│   ├── affinity.R                  # Affinity calculations
+│   ├── init.R                      # Initialization methods
+│   ├── supervised.R                # Supervised UMAP
+│   ├── nn_hnsw.R                   # HNSW nearest neighbors
+│   ├── nn_nndescent.R              # NN descent algorithm
+│   ├── util.R                      # Utility functions
+│   ├── RcppExports.R               # Rcpp bindings
+│   ├── bigstatsr_init.R            # bigstatsr initialization
+│   └── rspectra_init.R             # RSpectra initialization
+├── src/                            # 13 C++ files
+│   ├── rng.h                       # Modified: sitmo instead of dqrng
+│   ├── optimize.cpp                # SGD optimization
+│   └── ...                         # Other C++ sources
+├── tests/testthat/                 # 1140 tests across 26 test files
+│   ├── test_comparison_uwot.R      # Comparison tests vs uwot
+│   ├── test-coverage_gaps.R        # 94 coverage gap tests
+│   └── ...                         # Feature tests
+├── scripts/
+│   └── precommit-tests.sh          # Pre-commit test runner
+├── .githooks/
+│   └── pre-commit                  # Git pre-commit hook
+├── .claude/                        # Claude Code configuration
+│   ├── INTERACTIONS_LOG.md         # This file
+│   └── commands/                   # Custom slash commands
+├── DESCRIPTION                     # Package metadata (sitmo in LinkingTo)
+├── NAMESPACE                       # Exports
+├── Makefile                        # Build and test automation
+├── CLAUDE.md                       # Claude Code project config
+└── README.md                       # Package documentation
+```
+
+### Key Differences from Original uwot
+
+| Aspect | uwot | uwotlite |
+|--------|------|----------|
+| License | GPL-3 | MIT |
+| RNG library | dqrng (AGPL-3) | sitmo (MIT) |
+| Default RNG | pcg | sitmo |
+| Test count | ~800 | 1140 |
