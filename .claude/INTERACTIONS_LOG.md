@@ -462,3 +462,24 @@ The duplicate file contained the same ~22 comparison tests as `test-zzz_comparis
 
 ### Lesson Learned
 When renaming test files, ensure the old file is completely removed from the installed package. Running `devtools::install(quick = FALSE)` with a full rebuild ensures the installed tests match the source repository.
+
+---
+
+## 2026-01-19: Lintr Compliance (embedmit only)
+
+### Summary
+embedmit achieved full lintr compliance. uwotlite was reviewed but not modified because its lintr warnings are inherited mathematical conventions from uwot.
+
+### uwotlite Lintr Status
+uwotlite has lintr warnings for:
+- Parameter names like `X`, `A`, `P`, `M` (mathematical conventions from UMAP literature)
+- Some line length issues in affinity.R, init.R
+- Commented code in init.R (preserved from original uwot)
+
+These patterns are intentional and match the original uwot package for consistency with the UMAP literature and API compatibility.
+
+### Changes
+- Updated .gitignore to exclude `..Rcheck/` build artifacts
+
+### Related
+See embedmit INTERACTIONS_LOG.md for the full lintr compliance work done there.
