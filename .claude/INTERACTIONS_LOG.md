@@ -206,4 +206,38 @@ uwotlite/
 | License | GPL-3 | MIT |
 | RNG library | dqrng (AGPL-3) | sitmo (MIT) |
 | Default RNG | pcg | sitmo |
-| Test count | ~800 | 1140 |
+| Test count | 963 | 1140 |
+
+---
+
+## Test Coverage Comparison
+
+### All Packages (Original vs Fork)
+
+| Package  | R files | C++ files | Test files | Tests |
+|----------|---------|-----------|------------|-------|
+| embed    | 22      | -         | 20         | 688   |
+| embedmit | 22      | -         | 24         | 833   |
+| uwot     | 13      | 13        | 22         | 963   |
+| uwotlite | 13      | 13        | 26         | 1140  |
+
+**Improvements:**
+
+- embedmit: +4 test files, +145 tests (+21%)
+- uwotlite: +4 test files, +177 tests (+18%)
+
+---
+
+## Code Changes Analysis
+
+### uwotlite: Files Modified from uwot
+
+| File | Change Type | Description |
+|------|-------------|-------------|
+| src/rng.h | **Substantive** | Replaced dqrng (AGPL) with sitmo (MIT) |
+| src/rng.h | **Substantive** | Custom `convert_seed()` replacing dqrng version |
+| src/rng.h | **Substantive** | `pcg32` → `sitmo::prng_engine` |
+| R/RcppExports.R | Generated | Updated symbol prefixes |
+| R/uwot.R, R/umap2.R | Minor | Package name references |
+
+**Total substantive code changes:** ~50 lines in src/rng.h
