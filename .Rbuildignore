@@ -24,4 +24,4 @@
 ^CLAUDE\.md$
 ^Makefile$
 ^scripts$
-^uwotlite_.*\.tar\.gz$
+^uwotmit_.*\.tar\.gz$
