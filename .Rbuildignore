@@ -21,3 +21,7 @@
 ^tests/testthat/helper_comparison\.R$
 ^\.claude$
 ^\.githooks$
+^CLAUDE\.md$
+^Makefile$
+^scripts$
+^uwotlite_.*\.tar\.gz$

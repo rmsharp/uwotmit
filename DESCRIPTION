@@ -1,7 +1,7 @@
 Package: uwotmit
 Title: The Uniform Manifold Approximation and Projection (UMAP) Method for
     Dimensionality Reduction (MIT-Compatible Fork)
-Version: 0.2.4.9000
+Version: 1.0.0
 Authors@R: c(
     person("James", "Melville", email = "jlmelville@gmail.com", role = c("aut", "cph")),
     person("R. Mark", "Sharp", email = "rmsharp@me.com", role = c("cre", "ctb")),
