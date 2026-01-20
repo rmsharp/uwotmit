@@ -711,3 +711,25 @@ Addressed goodpractice recommendation to avoid `1:length()`, `1:nrow()`, `1:ncol
 
 ### Test Results
 All 1140 tests pass.
+
+---
+
+## 2026-01-19: Replace setwd() with withr::with_dir()
+
+### Summary
+Addressed goodpractice recommendation to avoid `setwd()` which changes global state. Replaced with `withr::with_dir()` which temporarily changes directory and automatically restores it.
+
+### Changes Made
+
+1. **DESCRIPTION**: Added `withr` to Imports
+
+2. **R/uwot.R** - `save_uwot()` function:
+   - Removed manual `wd <- getwd()` save and `setwd(wd)` restore
+   - Wrapped `utils::tar()` call in `withr::with_dir(mod_dir, {...})`
+
+3. **tests/testthat/test_saveload.R** - "save-load relative path" test:
+   - Removed `on.exit(setwd(old_wd), add = TRUE)` pattern
+   - Wrapped test body in `withr::with_dir(test_dir, {...})`
+
+### Test Results
+All 1140 tests pass.

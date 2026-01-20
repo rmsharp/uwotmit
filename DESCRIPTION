@@ -32,7 +32,8 @@ Imports:
     methods,
     Rcpp,
     RcppAnnoy (>= 0.0.17),
-    RSpectra
+    RSpectra,
+    withr
 Suggests:
     bigstatsr,
     covr,

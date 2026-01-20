@@ -4022,7 +4022,6 @@ save_uwot <- function(model, file, unload = FALSE, verbose = FALSE) {
     stop("cannot save: NN index is unloaded")
   }
 
-  wd <- getwd()
   model_file <- abspath(file)
   if (file.exists(model_file)) {
     stop("model file ", model_file, " already exists")
@@ -4081,8 +4080,6 @@ save_uwot <- function(model, file, unload = FALSE, verbose = FALSE) {
       # archive the files under the temp dir into the single target file
       # change directory so the archive only contains one directory
       tmp_model_file <- abspath(file)
-      tsmessage("Changing to ", mod_dir)
-      setwd(mod_dir)
       tsmessage("Creating ", tmp_model_file)
 
       # #109: Windows 7 tar needs "--force-local" to avoid interpreting colon
@@ -4091,14 +4088,16 @@ save_uwot <- function(model, file, unload = FALSE, verbose = FALSE) {
       if (is_win7()) {
         extra_flags <- "--force-local"
       }
-      utils::tar(
-        tarfile = tmp_model_file,
-        extra_flags = extra_flags,
-        files = "uwot/"
-      )
+      # Use withr::with_dir to temporarily change directory for tar
+      withr::with_dir(mod_dir, {
+        utils::tar(
+          tarfile = tmp_model_file,
+          extra_flags = extra_flags,
+          files = "uwot/"
+        )
+      })
     },
     finally = {
-      setwd(wd)
       if (!is.null(tmp_model_file) && model_file != tmp_model_file) {
         tsmessage("Copying ", tmp_model_file, " to ", model_file)
         file.copy(from = tmp_model_file, to = model_file)
