@@ -31,7 +31,7 @@ articles:
   articles/umap2: umap2.html
   uwot: uwot.html
   articles/whatsnew: whatsnew.html
-last_built: 2026-01-19T22:56Z
+last_built: 2026-01-20T05:31Z
 urls:
-  reference: https://rmsharp.github.io/uwotlite/reference
-  article: https://rmsharp.github.io/uwotlite/articles
+  reference: https://rmsharp.github.io/uwotmit/reference
+  article: https://rmsharp.github.io/uwotmit/articles

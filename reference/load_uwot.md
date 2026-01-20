@@ -21,17 +21,17 @@ load_uwot(file, verbose = FALSE)
 ## Value
 
 The model saved at `file`, for use with
-[`umap_transform`](https://rmsharp.github.io/uwotlite/reference/umap_transform.md).
+[`umap_transform`](https://rmsharp.github.io/uwotmit/reference/umap_transform.md).
 Additionally, it contains an extra item: `mod_dir`, which contains the
 path to the temporary working directory used during loading of the
 model. This directory cannot be removed until this model has been
 unloaded by using
-[`unload_uwot`](https://rmsharp.github.io/uwotlite/reference/unload_uwot.md).
+[`unload_uwot`](https://rmsharp.github.io/uwotmit/reference/unload_uwot.md).
 
 ## See also
 
-[`save_uwot`](https://rmsharp.github.io/uwotlite/reference/save_uwot.md),
-[`unload_uwot`](https://rmsharp.github.io/uwotlite/reference/unload_uwot.md)
+[`save_uwot`](https://rmsharp.github.io/uwotmit/reference/save_uwot.md),
+[`unload_uwot`](https://rmsharp.github.io/uwotmit/reference/unload_uwot.md)
 
 ## Examples
 

@@ -2,8 +2,8 @@
 
 Carry out an embedding of new data using an existing embedding. Requires
 using the result of calling
-[`umap`](https://rmsharp.github.io/uwotlite/reference/umap.md) or
-[`tumap`](https://rmsharp.github.io/uwotlite/reference/tumap.md) with
+[`umap`](https://rmsharp.github.io/uwotmit/reference/umap.md) or
+[`tumap`](https://rmsharp.github.io/uwotmit/reference/tumap.md) with
 `ret_model = TRUE`.
 
 ## Usage
@@ -290,12 +290,11 @@ A matrix of coordinates for `X` transformed into the space of the
 ## Details
 
 Note that some settings are incompatible with the production of a UMAP
-model via
-[`umap`](https://rmsharp.github.io/uwotlite/reference/umap.md): external
-neighbor data (passed via a list to the argument of the `nn_method`
-parameter), and factor columns that were included in the UMAP
-calculation via the `metric` parameter. In the latter case, the model
-produced is based only on the numeric data. A transformation is
+model via [`umap`](https://rmsharp.github.io/uwotmit/reference/umap.md):
+external neighbor data (passed via a list to the argument of the
+`nn_method` parameter), and factor columns that were included in the
+UMAP calculation via the `metric` parameter. In the latter case, the
+model produced is based only on the numeric data. A transformation is
 possible, but factor columns in the new data are ignored.
 
 ## Examples

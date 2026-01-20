@@ -133,7 +133,7 @@ weighted_affinity_graph <- function(X,
     if (is.null(X)) {
       stop("X must be provided if midn_graph is NULL")
     }
-    uwotlite:::tsmessage(
+    uwotmit:::tsmessage(
       "Generating mid neighbor graph with mid_nnbrs=",
       mid_nnbrs,
       " (",
@@ -154,21 +154,21 @@ weighted_affinity_graph <- function(X,
     )
   }
 
-  uwotlite:::tsmessage("Generating near-affinity graph")
-  nbr_affinity_graph <- uwotlite::similarity_graph(
+  uwotmit:::tsmessage("Generating near-affinity graph")
+  nbr_affinity_graph <- uwotmit::similarity_graph(
     nn_method = nn_graph,
     n_threads = n_threads,
     verbose = FALSE
   )
 
-  uwotlite:::tsmessage("Generating mid-affinity graph")
-  mid_affinity_graph <- uwotlite::similarity_graph(
+  uwotmit:::tsmessage("Generating mid-affinity graph")
+  mid_affinity_graph <- uwotmit::similarity_graph(
     nn_method = midn_graph,
     n_threads = n_threads,
     verbose = FALSE
   )
 
-  uwotlite:::tsmessage(
+  uwotmit:::tsmessage(
     "Combining near and mid neighbor graphs with graph weight ",
     graph_weight
   )
@@ -194,7 +194,7 @@ mid_spectral_init <- function(X,
                               n_threads = NULL,
                               verbose = FALSE) {
   if (is.null(n_threads)) {
-    n_threads <- uwotlite:::default_num_threads()
+    n_threads <- uwotmit:::default_num_threads()
   }
 
   affinity_graph <- weighted_affinity_graph(
@@ -209,9 +209,9 @@ mid_spectral_init <- function(X,
     verbose = verbose
   )
 
-  coords <- uwotlite:::spectral_init(affinity_graph, verbose = verbose)
+  coords <- uwotmit:::spectral_init(affinity_graph, verbose = verbose)
 
-  uwotlite:::tsmessage("Finished initializing")
+  uwotmit:::tsmessage("Finished initializing")
   coords
 }
 ```

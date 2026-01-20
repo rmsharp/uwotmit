@@ -71,7 +71,7 @@ lvish(
 
   Controls the size of the local neighborhood used for manifold
   approximation. This is the analogous to `n_neighbors` in
-  [`umap`](https://rmsharp.github.io/uwotlite/reference/umap.md). Change
+  [`umap`](https://rmsharp.github.io/uwotmit/reference/umap.md). Change
   this, rather than `n_neighbors`.
 
 - n_neighbors:
@@ -689,8 +689,8 @@ following:
 
 - The default number of samples is much reduced. The default number of
   epochs, `n_epochs`, is set to `5000`, much larger than for
-  [`umap`](https://rmsharp.github.io/uwotlite/reference/umap.md), but
-  may need to be increased further depending on your dataset. Using
+  [`umap`](https://rmsharp.github.io/uwotmit/reference/umap.md), but may
+  need to be increased further depending on your dataset. Using
   `init = "spectral"` can help.
 
 ## References

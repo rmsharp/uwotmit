@@ -61,7 +61,7 @@ library(rnndescent)
 ## UMAP with nndescent
 
 ``` uwot
-library(uwotlite)
+library(uwotmit)
 ```
 
 `uwot` can now use `rnndescent` for its nearest neighbor search if you
@@ -548,7 +548,7 @@ neighbors, then:
   [`rnndescent::rnnd_build`](https://jlmelville.github.io/rnndescent/reference/rnnd_build.html)
   on your training data.
 - Run
-  [`uwotlite::umap`](https://rmsharp.github.io/uwotlite/reference/umap.md)
+  [`uwotmit::umap`](https://rmsharp.github.io/uwotmit/reference/umap.md)
   with `nn_method` set to the `graph` item in the result of `rnnd_build`
   and remember to set `ret_model = TRUE`.
 
@@ -559,7 +559,7 @@ To transform new data:
   on your test data, using the result of `rnnd_build` as the `index`
   parameter.
 - Run
-  [`uwotlite::umap_transform`](https://rmsharp.github.io/uwotlite/reference/umap_transform.md)
+  [`uwotmit::umap_transform`](https://rmsharp.github.io/uwotmit/reference/umap_transform.md)
   with `nn_method` set to the result of `rnnd_query`.
 
 If you don’t want to transform new data, then it’s even easier:
@@ -568,5 +568,5 @@ If you don’t want to transform new data, then it’s even easier:
   [`rnndescent::rnnd_knn`](https://jlmelville.github.io/rnndescent/reference/rnnd_knn.html)
   on your training data.
 - Run
-  [`uwotlite::umap`](https://rmsharp.github.io/uwotlite/reference/umap.md)
+  [`uwotmit::umap`](https://rmsharp.github.io/uwotmit/reference/umap.md)
   with `nn_method` set to the result of `rnnd_knn`.

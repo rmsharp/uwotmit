@@ -1,7 +1,7 @@
 # Unload a Model
 
 Unloads the UMAP model. This prevents the model being used with
-[`umap_transform`](https://rmsharp.github.io/uwotlite/reference/umap_transform.md),
+[`umap_transform`](https://rmsharp.github.io/uwotmit/reference/umap_transform.md),
 but allows the temporary working directory associated with saving or
 loading the model to be removed.
 
@@ -16,7 +16,7 @@ unload_uwot(model, cleanup = TRUE, verbose = FALSE)
 - model:
 
   a UMAP model create by
-  [`umap`](https://rmsharp.github.io/uwotlite/reference/umap.md).
+  [`umap`](https://rmsharp.github.io/uwotmit/reference/umap.md).
 
 - cleanup:
 
@@ -29,8 +29,8 @@ unload_uwot(model, cleanup = TRUE, verbose = FALSE)
 
 ## See also
 
-[`save_uwot`](https://rmsharp.github.io/uwotlite/reference/save_uwot.md),
-[`load_uwot`](https://rmsharp.github.io/uwotlite/reference/load_uwot.md)
+[`save_uwot`](https://rmsharp.github.io/uwotmit/reference/save_uwot.md),
+[`load_uwot`](https://rmsharp.github.io/uwotmit/reference/load_uwot.md)
 
 ## Examples
 

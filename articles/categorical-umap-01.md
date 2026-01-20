@@ -1,8 +1,8 @@
 # Dimensionality Reduction with UMAP
 
 This vignette demonstrates UMAP (Uniform Manifold Approximation and
-Projection) dimensionality reduction using `uwotlite`, as a complement
-to the categorical encoding techniques shown in [Chapter 17 of Tidy
+Projection) dimensionality reduction using `uwotmit`, as a complement to
+the categorical encoding techniques shown in [Chapter 17 of Tidy
 Modeling with R](https://www.tmwr.org/categorical).
 
 ## Introduction
@@ -20,12 +20,12 @@ UMAP is a nonlinear dimensionality reduction technique that:
   dimensions)
 - Supports supervised reduction using outcome information
 
-The `uwotlite` package provides an MIT-licensed UMAP implementation.
+The `uwotmit` package provides an MIT-licensed UMAP implementation.
 
 ## Setup
 
 ``` r
-library(uwotlite)
+library(uwotmit)
 library(dplyr)
 library(ggplot2)
 library(modeldata)
@@ -62,7 +62,7 @@ ames_numeric <- ames_train %>%
   # Scale the features
   mutate(across(everything(), scale))
 
-# Convert to matrix for uwotlite
+# Convert to matrix for uwotmit
 ames_matrix <- as.matrix(ames_numeric)
 
 dim(ames_matrix)
@@ -73,7 +73,7 @@ The matrix contains our observations and 16 numeric features.
 
 ## Basic UMAP
 
-The [`umap()`](https://rmsharp.github.io/uwotlite/reference/umap.md)
+The [`umap()`](https://rmsharp.github.io/uwotmit/reference/umap.md)
 function performs dimensionality reduction:
 
 ``` r
@@ -209,7 +209,7 @@ structure, higher values capture more global patterns.
 
 ## Transforming New Data
 
-A key feature of `uwotlite` is the ability to transform new data using a
+A key feature of `uwotmit` is the ability to transform new data using a
 fitted UMAP model. This is essential for prediction workflows.
 
 ``` r
@@ -325,7 +325,7 @@ by just two UMAP dimensions.
 
 ## Supervised UMAP
 
-`uwotlite` supports *supervised* UMAP, which uses label information to
+`uwotmit` supports *supervised* UMAP, which uses label information to
 guide the embedding. This can improve the embedding for prediction
 tasks:
 
@@ -396,15 +396,15 @@ This pipeline:
 UMAP is a powerful dimensionality reduction technique that complements
 categorical encoding:
 
-| Use Case                             | Technique                                                                                                    |
-|--------------------------------------|--------------------------------------------------------------------------------------------------------------|
-| Encode high-cardinality categoricals | Effect encodings (`step_lencode_*`)                                                                          |
-| Visualize high-dimensional data      | UMAP with `n_components = 2`                                                                                 |
-| Create features from many predictors | UMAP with `n_components > 2`                                                                                 |
-| Improve embeddings for prediction    | Supervised UMAP with `y` parameter                                                                           |
-| Apply to new data                    | [`umap_transform()`](https://rmsharp.github.io/uwotlite/reference/umap_transform.md) with `ret_model = TRUE` |
+| Use Case                             | Technique                                                                                                   |
+|--------------------------------------|-------------------------------------------------------------------------------------------------------------|
+| Encode high-cardinality categoricals | Effect encodings (`step_lencode_*`)                                                                         |
+| Visualize high-dimensional data      | UMAP with `n_components = 2`                                                                                |
+| Create features from many predictors | UMAP with `n_components > 2`                                                                                |
+| Improve embeddings for prediction    | Supervised UMAP with `y` parameter                                                                          |
+| Apply to new data                    | [`umap_transform()`](https://rmsharp.github.io/uwotmit/reference/umap_transform.md) with `ret_model = TRUE` |
 
-The `uwotlite` package provides an MIT-licensed UMAP implementation that
+The `uwotmit` package provides an MIT-licensed UMAP implementation that
 integrates seamlessly with `embedmit` for complete feature engineering
 workflows.
 

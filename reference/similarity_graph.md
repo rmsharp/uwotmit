@@ -515,7 +515,7 @@ similarity_graph(
     value will give more accurate results at the cost of a longer
     computation time. Default is `1.5`. This parameter only affects
     neighbor search when transforming new data with
-    [`umap_transform`](https://rmsharp.github.io/uwotlite/reference/umap_transform.md).
+    [`umap_transform`](https://rmsharp.github.io/uwotmit/reference/umap_transform.md).
 
   - `epsilon` Controls the degree of the back-tracking when traversing
     the search graph. Setting this to `0.0` will do a greedy search with
@@ -523,7 +523,7 @@ similarity_graph(
     the cost of a longer computation time. Default is `0.1`. This
     parameter only affects neighbor search when transforming new data
     with
-    [`umap_transform`](https://rmsharp.github.io/uwotlite/reference/umap_transform.md).
+    [`umap_transform`](https://rmsharp.github.io/uwotmit/reference/umap_transform.md).
 
   - `max_search_fraction` Specifies the maximum fraction of the search
     graph to traverse. By default, this is set to `1.0`, so the entire
@@ -532,7 +532,7 @@ similarity_graph(
     conjunction with `epsilon`) to avoid an inefficient exhaustive
     search of the data in `X`. This parameter only affects neighbor
     search when transforming new data with
-    [`umap_transform`](https://rmsharp.github.io/uwotlite/reference/umap_transform.md).
+    [`umap_transform`](https://rmsharp.github.io/uwotmit/reference/umap_transform.md).
 
 ## Value
 
@@ -568,7 +568,7 @@ then the return value will be a list containing:
 ## Details
 
 This is equivalent to running
-[`umap`](https://rmsharp.github.io/uwotlite/reference/umap.md) with the
+[`umap`](https://rmsharp.github.io/uwotmit/reference/umap.md) with the
 `ret_extra = c("fgraph")` parameter, but without the overhead of
 calculating (or returning) the optimized low-dimensional coordinates.
 

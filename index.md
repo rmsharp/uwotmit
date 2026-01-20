@@ -1,26 +1,26 @@
-# uwotlite
+# uwotmit
 
 ## MIT-Compatible Fork of uwot
 
-`uwotlite` is an MIT-licensed fork of the
+`uwotmit` is an MIT-licensed fork of the
 [uwot](https://github.com/jlmelville/uwot) package. It provides the same
 UMAP (Uniform Manifold Approximation and Projection) dimensionality
 reduction functionality but with MIT-compatible dependencies.
 
-### Why uwotlite?
+### Why uwotmit?
 
 The original `uwot` package depends on `dqrng` for its PCG random number
 generator, which is licensed under AGPL-3. This can create licensing
 complications for projects that need to maintain MIT or other permissive
 licensing throughout their dependency tree.
 
-`uwotlite` replaces the AGPL-licensed `dqrng` dependency with the
+`uwotmit` replaces the AGPL-licensed `dqrng` dependency with the
 MIT-licensed `sitmo` package, providing the same high-quality random
 number generation without the AGPL licensing requirement.
 
 ### Key Differences from uwot
 
-| Feature       | uwot           | uwotlite    |
+| Feature       | uwot           | uwotmit     |
 |---------------|----------------|-------------|
 | License       | GPL (\>= 3)    | MIT         |
 | RNG Library   | dqrng (AGPL-3) | sitmo (MIT) |
@@ -32,13 +32,13 @@ number generation without the AGPL licensing requirement.
 
 ``` r
 # install.packages("devtools")
-devtools::install_github("rmsharp/uwotlite")
+devtools::install_github("rmsharp/uwotmit")
 ```
 
 ## Example
 
 ``` r
-library(uwotlite)
+library(uwotmit)
 
 # umap2 is a version of the umap() function with better defaults
 iris_umap <- umap2(iris)
@@ -56,7 +56,7 @@ plot(
   cex = 0.1,
   col = grDevices::rainbow(n = length(levels(mnist$Label)))[as.integer(mnist$Label)] |>
     grDevices::adjustcolor(alpha.f = 0.1),
-  main = "uwotlite::umap",
+  main = "uwotmit::umap",
   xlab = "",
   ylab = ""
 )
@@ -85,7 +85,7 @@ the original uwot documentation at <https://jlmelville.github.io/uwot/>.
 
 ## License
 
-[MIT](https://rmsharp.github.io/uwotlite/LICENSE.md)
+[MIT](https://rmsharp.github.io/uwotmit/LICENSE.md)
 
 ## Acknowledgments
 
@@ -99,4 +99,4 @@ original author and contributors.
 - The [UMAP reference implementation](https://github.com/lmcinnes/umap)
   and [publication](https://arxiv.org/abs/1802.03426)
 - [embedmit](https://github.com/rmsharp/embedmit) - MIT-compatible fork
-  of the embed package that uses uwotlite
+  of the embed package that uses uwotmit

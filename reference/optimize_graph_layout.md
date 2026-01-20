@@ -8,7 +8,7 @@ and Projection (UMAP) method (McInnes et al., 2018), but the approach
 from LargeVis (Tang et al., 2016) can also be used. This function can be
 used to produce a low dimensional representation of the graph produced
 by
-[`similarity_graph`](https://rmsharp.github.io/uwotlite/reference/similarity_graph.md).
+[`similarity_graph`](https://rmsharp.github.io/uwotmit/reference/similarity_graph.md).
 
 ## Usage
 

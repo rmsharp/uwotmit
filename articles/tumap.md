@@ -9,7 +9,7 @@ significantly simplify the gradient leading to a noticeable speed-up.
 For MNIST:
 
 ``` r
-library(uwotlite)
+library(uwotmit)
 # install snedata package from github
 # pak::pkg_install("jlmelville/snedata")
 mnist <- snedata::download_mnist()

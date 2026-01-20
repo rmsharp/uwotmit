@@ -7,25 +7,25 @@ These include:
 - [RcppHNSW](https://cran.r-project.org/package=RcppHNSW) – used for
   nearest neighbor search. Once installed and loaded, you can specify
   `nn_method = "hnsw"` in
-  [`uwotlite::umap`](https://rmsharp.github.io/uwotlite/reference/umap.md)
+  [`uwotmit::umap`](https://rmsharp.github.io/uwotmit/reference/umap.md)
   as long as your `metric` is either `"euclidean"`, `"cosine"` or
   `"correlation"`. This should be a bit faster than the default of Annoy
   in most cases. If you use
-  [`uwotlite::umap2`](https://rmsharp.github.io/uwotlite/reference/umap2.md)
+  [`uwotmit::umap2`](https://rmsharp.github.io/uwotmit/reference/umap2.md)
   then you will get HNSW by default without having to specify
   `nn_method`.
 - [rnndescent](https://cran.r-project.org/package=rnndescent) – used for
   nearest neighbor search. Once installed and loaded, you can specify
   `nn_method = "nndescent"` in
-  [`uwotlite::umap`](https://rmsharp.github.io/uwotlite/reference/umap.md).
+  [`uwotmit::umap`](https://rmsharp.github.io/uwotmit/reference/umap.md).
   `rnndescent` can handle many metrics, so see its
   [documentation](https://jlmelville.github.io/rnndescent/articles/metrics.html)
   for more information. If you use
-  [`uwotlite::umap2`](https://rmsharp.github.io/uwotlite/reference/umap2.md)
+  [`uwotmit::umap2`](https://rmsharp.github.io/uwotmit/reference/umap2.md)
   and do not load `RcppHNSW`, then you will use this method by default
   without having to specify `nn_method`. You can also use sparse
   matrices as input to
-  [`uwotlite::umap2`](https://rmsharp.github.io/uwotlite/reference/umap2.md).
+  [`uwotmit::umap2`](https://rmsharp.github.io/uwotmit/reference/umap2.md).
   See the [sparse data
   article](https://jlmelville.github.io/uwot/articles/sparse-data-example.html)
   for more details.
@@ -58,7 +58,7 @@ and then have them (and `RSpectra`) loaded whenever you are using
 library(RSpectra)
 library(RcppHNSW)
 library(rnndescent)
-library(uwotlite)
+library(uwotmit)
 ```
 
 The following UMAP run will then use `RcppHNSW` and `RSpectra` (versus

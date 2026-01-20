@@ -13,7 +13,7 @@ save_uwot(model, file, unload = FALSE, verbose = FALSE)
 - model:
 
   a UMAP model create by
-  [`umap`](https://rmsharp.github.io/uwotlite/reference/umap.md).
+  [`umap`](https://rmsharp.github.io/uwotmit/reference/umap.md).
 
 - file:
 
@@ -23,14 +23,14 @@ save_uwot(model, file, unload = FALSE, verbose = FALSE)
 
   if `TRUE`, unload all nearest neighbor indexes for the model. The
   `model` will no longer be valid for use in
-  [`umap_transform`](https://rmsharp.github.io/uwotlite/reference/umap_transform.md)
+  [`umap_transform`](https://rmsharp.github.io/uwotmit/reference/umap_transform.md)
   and the temporary working directory used during model saving will be
   deleted. You will need to reload the model with `load_uwot` to use the
   model. If `FALSE`, then the model can be re-used without reloading,
   but you must manually unload the NN index when you are finished using
   it if you want to delete the temporary working directory. To unload
   manually, use
-  [`unload_uwot`](https://rmsharp.github.io/uwotlite/reference/unload_uwot.md).
+  [`unload_uwot`](https://rmsharp.github.io/uwotmit/reference/unload_uwot.md).
   The absolute path of the working directory is found in the `mod_dir`
   item of the return value.
 
@@ -43,14 +43,14 @@ save_uwot(model, file, unload = FALSE, verbose = FALSE)
 `model` with one extra item: `mod_dir`, which contains the path to the
 working directory. If `unload = FALSE` then this directory still exists
 after this function returns, and can be cleaned up with
-[`unload_uwot`](https://rmsharp.github.io/uwotlite/reference/unload_uwot.md).
+[`unload_uwot`](https://rmsharp.github.io/uwotmit/reference/unload_uwot.md).
 If you don't care about cleaning up this directory, or `unload = TRUE`,
 then you can ignore the return value.
 
 ## See also
 
-[`load_uwot`](https://rmsharp.github.io/uwotlite/reference/load_uwot.md),
-[`unload_uwot`](https://rmsharp.github.io/uwotlite/reference/unload_uwot.md)
+[`load_uwot`](https://rmsharp.github.io/uwotmit/reference/load_uwot.md),
+[`unload_uwot`](https://rmsharp.github.io/uwotmit/reference/unload_uwot.md)
 
 ## Examples
 

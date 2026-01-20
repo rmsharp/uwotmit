@@ -1,8 +1,7 @@
 # uwot
 
 ``` r
-library(uwotlite)
-#> Loading required package: Matrix
+library(uwotmit)
 library(RSpectra)
 ```
 

@@ -525,7 +525,7 @@ more details). I will also save the nearest neighbors with
 calculate later.
 
 ``` r
-library(uwotlite)
+library(uwotmit)
 ng20_umap <-
   umap2(
     X = tfidf_sp,

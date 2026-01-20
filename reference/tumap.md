@@ -2,7 +2,7 @@
 
 A faster (but less flexible) version of the UMAP (McInnes et al, 2018)
 gradient. For more detail on UMAP, see the
-[`umap`](https://rmsharp.github.io/uwotlite/reference/umap.md) function.
+[`umap`](https://rmsharp.github.io/uwotmit/reference/umap.md) function.
 
 ## Usage
 
@@ -504,7 +504,7 @@ tumap(
 
   If `TRUE`, then return extra data that can be used to add new data to
   an existing embedding via
-  [`umap_transform`](https://rmsharp.github.io/uwotlite/reference/umap_transform.md).
+  [`umap_transform`](https://rmsharp.github.io/uwotmit/reference/umap_transform.md).
   The embedded coordinates are returned as the list item `embedding`. If
   `FALSE`, just return the coordinates. This parameter can be used in
   conjunction with `ret_nn` and `ret_extra`. Note that some settings are
@@ -684,7 +684,7 @@ tumap(
   convenient in some situations than having to call a separate function.
   The default is to not set a seed. If `ret_model = TRUE`, the seed will
   be stored in the output model and then used to set the seed inside
-  [`umap_transform`](https://rmsharp.github.io/uwotlite/reference/umap_transform.md).
+  [`umap_transform`](https://rmsharp.github.io/uwotmit/reference/umap_transform.md).
 
 - nn_args:
 
@@ -746,7 +746,7 @@ tumap(
     value will give more accurate results at the cost of a longer
     computation time. Default is `1.5`. This parameter only affects
     neighbor search when transforming new data with
-    [`umap_transform`](https://rmsharp.github.io/uwotlite/reference/umap_transform.md).
+    [`umap_transform`](https://rmsharp.github.io/uwotmit/reference/umap_transform.md).
 
   - `epsilon` Controls the degree of the back-tracking when traversing
     the search graph. Setting this to `0.0` will do a greedy search with
@@ -754,7 +754,7 @@ tumap(
     the cost of a longer computation time. Default is `0.1`. This
     parameter only affects neighbor search when transforming new data
     with
-    [`umap_transform`](https://rmsharp.github.io/uwotlite/reference/umap_transform.md).
+    [`umap_transform`](https://rmsharp.github.io/uwotmit/reference/umap_transform.md).
 
   - `max_search_fraction` Specifies the maximum fraction of the search
     graph to traverse. By default, this is set to `1.0`, so the entire
@@ -763,7 +763,7 @@ tumap(
     conjunction with `epsilon`) to avoid an inefficient exhaustive
     search of the data in `X`. This parameter only affects neighbor
     search when transforming new data with
-    [`umap_transform`](https://rmsharp.github.io/uwotlite/reference/umap_transform.md).
+    [`umap_transform`](https://rmsharp.github.io/uwotmit/reference/umap_transform.md).
 
   For `nn_method = "nndescent"`, you may specify the following
   arguments:
@@ -804,7 +804,7 @@ tumap(
     value will give more accurate results at the cost of a longer
     computation time. Default is `1.5`. This parameter only affects
     neighbor search when transforming new data with
-    [`umap_transform`](https://rmsharp.github.io/uwotlite/reference/umap_transform.md).
+    [`umap_transform`](https://rmsharp.github.io/uwotmit/reference/umap_transform.md).
 
   - `epsilon` Controls the degree of the back-tracking when traversing
     the search graph. Setting this to `0.0` will do a greedy search with
@@ -812,7 +812,7 @@ tumap(
     the cost of a longer computation time. Default is `0.1`. This
     parameter only affects neighbor search when transforming new data
     with
-    [`umap_transform`](https://rmsharp.github.io/uwotlite/reference/umap_transform.md).
+    [`umap_transform`](https://rmsharp.github.io/uwotmit/reference/umap_transform.md).
 
   - `max_search_fraction` Specifies the maximum fraction of the search
     graph to traverse. By default, this is set to `1.0`, so the entire
@@ -821,7 +821,7 @@ tumap(
     conjunction with `epsilon`) to avoid an inefficient exhaustive
     search of the data in `X`. This parameter only affects neighbor
     search when transforming new data with
-    [`umap_transform`](https://rmsharp.github.io/uwotlite/reference/umap_transform.md).
+    [`umap_transform`](https://rmsharp.github.io/uwotmit/reference/umap_transform.md).
 
 - rng_type:
 
@@ -847,7 +847,7 @@ A matrix of optimized coordinates, or:
 - if `ret_model = TRUE` (or `ret_extra` contains `"model"`), returns a
   list containing extra information that can be used to add new data to
   an existing embedding via
-  [`umap_transform`](https://rmsharp.github.io/uwotlite/reference/umap_transform.md).
+  [`umap_transform`](https://rmsharp.github.io/uwotmit/reference/umap_transform.md).
   In this case, the coordinates are available in the list item
   `embedding`. **NOTE**: The contents of the `model` list should *not*
   be considered stable or part of the public API, and are purposely left

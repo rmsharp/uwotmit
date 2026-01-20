@@ -20,7 +20,7 @@ install.packages("RcppHNSW")
 `uwot` will now be able to use it if you set `nn_method = "hnsw"`, e.g.
 
 ``` r
-library(uwotlite)
+library(uwotmit)
 # doesn't use HNSW
 iris_umap <- umap(iris)
 

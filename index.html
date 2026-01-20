@@ -5,7 +5,7 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<title>The Uniform Manifold Approximation and Projection (UMAP) Method for Dimensionality Reduction (MIT-Compatible Fork) • uwotlite</title>
+<title>The Uniform Manifold Approximation and Projection (UMAP) Method for Dimensionality Reduction (MIT-Compatible Fork) • uwotmit</title>
 <script src="deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
 <script src="deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
@@ -20,7 +20,7 @@
 
     <nav class="navbar navbar-expand-lg fixed-top bg-light" data-bs-theme="light" aria-label="Site navigation"><div class="container">
 
-    <a class="navbar-brand me-2" href="index.html">uwotlite</a>
+    <a class="navbar-brand me-2" href="index.html">uwotmit</a>
 
     <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.4.9000</small>
 
@@ -72,7 +72,7 @@
 <li class="nav-item"><form class="form-inline" role="search">
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="search.json">
 </form></li>
-<li class="nav-item"><a class="external-link nav-link" href="https://github.com/rmsharp/uwotlite/" aria-label="GitHub"><span class="fa fab fa-github fa-lg"></span></a></li>
+<li class="nav-item"><a class="external-link nav-link" href="https://github.com/rmsharp/uwotmit/" aria-label="GitHub"><span class="fa fab fa-github fa-lg"></span></a></li>
       </ul>
 </div>
 
@@ -81,19 +81,19 @@
 </nav><div class="container template-home">
 <div class="row">
   <main id="main" class="col-md-9"><div class="section level1">
-<div class="page-header"><h1 id="uwotlite">uwotlite<a class="anchor" aria-label="anchor" href="#uwotlite"></a>
+<div class="page-header"><h1 id="uwotmit">uwotmit<a class="anchor" aria-label="anchor" href="#uwotmit"></a>
 </h1></div>
 <!-- badges: start -->
 
 <div class="section level2">
 <h2 id="mit-compatible-fork-of-uwot">MIT-Compatible Fork of uwot<a class="anchor" aria-label="anchor" href="#mit-compatible-fork-of-uwot"></a>
 </h2>
-<p><code>uwotlite</code> is an MIT-licensed fork of the <a href="https://github.com/jlmelville/uwot" class="external-link">uwot</a> package. It provides the same UMAP (Uniform Manifold Approximation and Projection) dimensionality reduction functionality but with MIT-compatible dependencies.</p>
+<p><code>uwotmit</code> is an MIT-licensed fork of the <a href="https://github.com/jlmelville/uwot" class="external-link">uwot</a> package. It provides the same UMAP (Uniform Manifold Approximation and Projection) dimensionality reduction functionality but with MIT-compatible dependencies.</p>
 <div class="section level3">
-<h3 id="why-uwotlite">Why uwotlite?<a class="anchor" aria-label="anchor" href="#why-uwotlite"></a>
+<h3 id="why-uwotmit">Why uwotmit?<a class="anchor" aria-label="anchor" href="#why-uwotmit"></a>
 </h3>
 <p>The original <code>uwot</code> package depends on <code>dqrng</code> for its PCG random number generator, which is licensed under AGPL-3. This can create licensing complications for projects that need to maintain MIT or other permissive licensing throughout their dependency tree.</p>
-<p><code>uwotlite</code> replaces the AGPL-licensed <code>dqrng</code> dependency with the MIT-licensed <code>sitmo</code> package, providing the same high-quality random number generation without the AGPL licensing requirement.</p>
+<p><code>uwotmit</code> replaces the AGPL-licensed <code>dqrng</code> dependency with the MIT-licensed <code>sitmo</code> package, providing the same high-quality random number generation without the AGPL licensing requirement.</p>
 </div>
 <div class="section level3">
 <h3 id="key-differences-from-uwot">Key Differences from uwot<a class="anchor" aria-label="anchor" href="#key-differences-from-uwot"></a>
@@ -102,7 +102,7 @@
 <thead><tr class="header">
 <th>Feature</th>
 <th>uwot</th>
-<th>uwotlite</th>
+<th>uwotmit</th>
 </tr></thead>
 <tbody>
 <tr class="odd">
@@ -132,14 +132,14 @@
 </h3>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># install.packages("devtools")</span></span>
-<span><span class="fu">devtools</span><span class="fu">::</span><span class="fu">install_github</span><span class="op">(</span><span class="st">"rmsharp/uwotlite"</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">devtools</span><span class="fu">::</span><span class="fu">install_github</span><span class="op">(</span><span class="st">"rmsharp/uwotmit"</span><span class="op">)</span></span></code></pre></div>
 </div>
 </div>
 <div class="section level2">
 <h2 id="example">Example<a class="anchor" aria-label="anchor" href="#example"></a>
 </h2>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/rmsharp/uwotlite" class="external-link">uwotlite</a></span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/rmsharp/uwotmit" class="external-link">uwotmit</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># umap2 is a version of the umap() function with better defaults</span></span>
 <span><span class="va">iris_umap</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/umap2.html">umap2</a></span><span class="op">(</span><span class="va">iris</span><span class="op">)</span></span>
@@ -157,7 +157,7 @@
 <span>  cex <span class="op">=</span> <span class="fl">0.1</span>,</span>
 <span>  col <span class="op">=</span> <span class="fu">grDevices</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/grDevices/palettes.html" class="external-link">rainbow</a></span><span class="op">(</span>n <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/levels.html" class="external-link">levels</a></span><span class="op">(</span><span class="va">mnist</span><span class="op">$</span><span class="va">Label</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/integer.html" class="external-link">as.integer</a></span><span class="op">(</span><span class="va">mnist</span><span class="op">$</span><span class="va">Label</span><span class="op">)</span><span class="op">]</span> <span class="op">|&gt;</span></span>
 <span>    <span class="fu">grDevices</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/grDevices/adjustcolor.html" class="external-link">adjustcolor</a></span><span class="op">(</span>alpha.f <span class="op">=</span> <span class="fl">0.1</span><span class="op">)</span>,</span>
-<span>  main <span class="op">=</span> <span class="st">"uwotlite::umap"</span>,</span>
+<span>  main <span class="op">=</span> <span class="st">"uwotmit::umap"</span>,</span>
 <span>  xlab <span class="op">=</span> <span class="st">""</span>,</span>
 <span>  ylab <span class="op">=</span> <span class="st">""</span></span>
 <span><span class="op">)</span></span>
@@ -202,15 +202,15 @@
 <li>The <a href="https://github.com/lmcinnes/umap" class="external-link">UMAP reference implementation</a> and <a href="https://arxiv.org/abs/1802.03426" class="external-link">publication</a>
 </li>
 <li>
-<a href="https://github.com/rmsharp/embedmit" class="external-link">embedmit</a> - MIT-compatible fork of the embed package that uses uwotlite</li>
+<a href="https://github.com/rmsharp/embedmit" class="external-link">embedmit</a> - MIT-compatible fork of the embed package that uses uwotmit</li>
 </ul>
 </div>
 </div>
   </main><aside class="col-md-3"><div class="links">
 <h2 data-toc-skip>Links</h2>
 <ul class="list-unstyled">
-<li><a href="https://github.com/rmsharp/uwotlite/" class="external-link">Browse source code</a></li>
-<li><a href="https://github.com/rmsharp/uwotlite/issues" class="external-link">Report a bug</a></li>
+<li><a href="https://github.com/rmsharp/uwotmit/" class="external-link">Browse source code</a></li>
+<li><a href="https://github.com/rmsharp/uwotmit/issues" class="external-link">Report a bug</a></li>
 </ul>
 </div>
 
@@ -226,7 +226,7 @@
 <div class="citation">
 <h2 data-toc-skip>Citation</h2>
 <ul class="list-unstyled">
-<li><a href="authors.html#citation">Citing uwotlite</a></li>
+<li><a href="authors.html#citation">Citing uwotmit</a></li>
 </ul>
 </div>
 
@@ -242,7 +242,10 @@
 <div class="dev-status">
 <h2 data-toc-skip>Dev status</h2>
 <ul class="list-unstyled">
-<li><a href="https://github.com/rmsharp/uwotlite/actions" class="external-link"><img src="https://github.com/rmsharp/uwotlite/workflows/R-CMD-check/badge.svg" alt="R-CMD-check"></a></li>
+<li><a href="https://github.com/rmsharp/uwotmit/actions/workflows/R-CMD-check.yaml" class="external-link"><img src="https://github.com/rmsharp/uwotmit/actions/workflows/R-CMD-check.yaml/badge.svg" alt="R-CMD-check"></a></li>
+<li><a href="https://github.com/rmsharp/uwotmit/actions/workflows/R-CMD-check-scheduled.yaml" class="external-link"><img src="https://github.com/rmsharp/uwotmit/actions/workflows/R-CMD-check-scheduled.yaml/badge.svg" alt="R-CMD-check-scheduled"></a></li>
+<li><a href="https://opensource.org/licenses/MIT" class="external-link"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a></li>
+<li><a href="https://lifecycle.r-lib.org/articles/stages.html" class="external-link"><img src="https://img.shields.io/badge/lifecycle-experimental-orange.svg" alt="Lifecycle: experimental"></a></li>
 </ul>
 </div>
 
