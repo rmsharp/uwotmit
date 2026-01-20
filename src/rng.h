@@ -1,15 +1,15 @@
-//  UWOTLITE -- An R package for dimensionality reduction using UMAP
+//  UWOTMIT -- An R package for dimensionality reduction using UMAP
 //  (MIT-compatible fork of uwot)
 //
 //  Copyright (C) 2018 James Melville
 //  Copyright (C) 2025 R. Mark Sharp (MIT-compatible modifications)
 //
-//  This file is part of UWOTLITE
+//  This file is part of UWOTMIT
 //
-//  UWOTLITE is free software: you can redistribute it and/or modify
+//  UWOTMIT is free software: you can redistribute it and/or modify
 //  it under the terms of the MIT License.
 //
-//  UWOTLITE is distributed in the hope that it will be useful,
+//  UWOTMIT is distributed in the hope that it will be useful,
 //  but WITHOUT ANY WARRANTY; without even the implied warranty of
 //  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 //  MIT License for more details.

@@ -1,5 +1,5 @@
 #!/bin/bash
-# Pre-commit test script for uwotlite
+# Pre-commit test script for uwotmit
 # Runs all tests and blocks commit if any fail
 
 set -e
@@ -12,7 +12,7 @@ NC='\033[0m' # No Color
 
 echo ""
 echo "=========================================="
-echo "  uwotlite PRE-COMMIT TEST SUITE"
+echo "  uwotmit PRE-COMMIT TEST SUITE"
 echo "=========================================="
 echo ""
 

@@ -1,6 +1,5 @@
 # set_op_mix_ratio = between 0 and 1 mixes in fuzzy set intersection
 # set to 0 for intersection only
-#' @import Matrix
 fuzzy_set_union <- function(X, set_op_mix_ratio = 1) {
   XX <- X * Matrix::t(X)
   if (set_op_mix_ratio == 0) {

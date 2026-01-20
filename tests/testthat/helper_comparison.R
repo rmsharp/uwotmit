@@ -1,4 +1,4 @@
-# Comparison utility functions for uwotlite vs uwot testing
+# Comparison utility functions for uwotmit vs uwot testing
 
 # Skip helper for uwot comparison tests
 skip_if_no_uwot <- function() {
@@ -158,7 +158,7 @@ embeddings_similar <- function(comparison_result,
 }
 
 # Format comparison results for test output
-format_comparison_results <- function(comparison_result, labels = c("uwotlite", "uwot")) {
+format_comparison_results <- function(comparison_result, labels = c("uwotmit", "uwot")) {
   paste0(
     "Quality Metrics:\n",
     sprintf("  Trustworthiness: %s=%.4f, %s=%.4f (diff=%.4f)\n",

@@ -1,4 +1,4 @@
-library(uwotlite)
+library(uwotmit)
 context("perplexity")
 
 # Full neighbor values based on comparison with smallvis results

@@ -12,7 +12,7 @@ Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 
 // connected_components_undirected
 List connected_components_undirected(std::size_t N, const std::vector<int>& indices1, const std::vector<int>& indptr1, const std::vector<int>& indices2, const std::vector<int>& indptr2);
-RcppExport SEXP _uwotlite_connected_components_undirected(SEXP NSEXP, SEXP indices1SEXP, SEXP indptr1SEXP, SEXP indices2SEXP, SEXP indptr2SEXP) {
+RcppExport SEXP _uwotmit_connected_components_undirected(SEXP NSEXP, SEXP indices1SEXP, SEXP indptr1SEXP, SEXP indices2SEXP, SEXP indptr2SEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -27,7 +27,7 @@ END_RCPP
 }
 // annoy_search_parallel_cpp
 List annoy_search_parallel_cpp(const std::string& index_name, NumericMatrix mat, std::size_t n_neighbors, std::size_t search_k, const std::string& metric, std::size_t n_threads, std::size_t grain_size);
-RcppExport SEXP _uwotlite_annoy_search_parallel_cpp(SEXP index_nameSEXP, SEXP matSEXP, SEXP n_neighborsSEXP, SEXP search_kSEXP, SEXP metricSEXP, SEXP n_threadsSEXP, SEXP grain_sizeSEXP) {
+RcppExport SEXP _uwotmit_annoy_search_parallel_cpp(SEXP index_nameSEXP, SEXP matSEXP, SEXP n_neighborsSEXP, SEXP search_kSEXP, SEXP metricSEXP, SEXP n_threadsSEXP, SEXP grain_sizeSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -44,7 +44,7 @@ END_RCPP
 }
 // calc_row_probabilities_parallel
 List calc_row_probabilities_parallel(NumericVector nn_dist, std::size_t n_vertices, double perplexity, std::size_t n_iter, double tol, bool ret_sigma, std::size_t n_threads, std::size_t grain_size);
-RcppExport SEXP _uwotlite_calc_row_probabilities_parallel(SEXP nn_distSEXP, SEXP n_verticesSEXP, SEXP perplexitySEXP, SEXP n_iterSEXP, SEXP tolSEXP, SEXP ret_sigmaSEXP, SEXP n_threadsSEXP, SEXP grain_sizeSEXP) {
+RcppExport SEXP _uwotmit_calc_row_probabilities_parallel(SEXP nn_distSEXP, SEXP n_verticesSEXP, SEXP perplexitySEXP, SEXP n_iterSEXP, SEXP tolSEXP, SEXP ret_sigmaSEXP, SEXP n_threadsSEXP, SEXP grain_sizeSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -62,7 +62,7 @@ END_RCPP
 }
 // optimize_layout_r
 NumericMatrix optimize_layout_r(NumericMatrix head_embedding, Nullable<NumericMatrix> tail_embedding, const std::vector<unsigned int> positive_head, const std::vector<unsigned int> positive_tail, const std::vector<unsigned int> positive_ptr, unsigned int n_epochs, unsigned int n_head_vertices, unsigned int n_tail_vertices, const std::vector<float> epochs_per_sample, const std::string& method, List method_args, float initial_alpha, List opt_args, Nullable<Function> epoch_callback, float negative_sample_rate, const std::string& rng_type, bool batch, std::size_t n_threads, std::size_t grain_size, bool move_other, bool verbose);
-RcppExport SEXP _uwotlite_optimize_layout_r(SEXP head_embeddingSEXP, SEXP tail_embeddingSEXP, SEXP positive_headSEXP, SEXP positive_tailSEXP, SEXP positive_ptrSEXP, SEXP n_epochsSEXP, SEXP n_head_verticesSEXP, SEXP n_tail_verticesSEXP, SEXP epochs_per_sampleSEXP, SEXP methodSEXP, SEXP method_argsSEXP, SEXP initial_alphaSEXP, SEXP opt_argsSEXP, SEXP epoch_callbackSEXP, SEXP negative_sample_rateSEXP, SEXP rng_typeSEXP, SEXP batchSEXP, SEXP n_threadsSEXP, SEXP grain_sizeSEXP, SEXP move_otherSEXP, SEXP verboseSEXP) {
+RcppExport SEXP _uwotmit_optimize_layout_r(SEXP head_embeddingSEXP, SEXP tail_embeddingSEXP, SEXP positive_headSEXP, SEXP positive_tailSEXP, SEXP positive_ptrSEXP, SEXP n_epochsSEXP, SEXP n_head_verticesSEXP, SEXP n_tail_verticesSEXP, SEXP epochs_per_sampleSEXP, SEXP methodSEXP, SEXP method_argsSEXP, SEXP initial_alphaSEXP, SEXP opt_argsSEXP, SEXP epoch_callbackSEXP, SEXP negative_sample_rateSEXP, SEXP rng_typeSEXP, SEXP batchSEXP, SEXP n_threadsSEXP, SEXP grain_sizeSEXP, SEXP move_otherSEXP, SEXP verboseSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -93,7 +93,7 @@ END_RCPP
 }
 // smooth_knn_distances_parallel
 List smooth_knn_distances_parallel(NumericVector nn_dist, IntegerVector nn_ptr, bool skip_first, NumericVector target, std::size_t n_iter, double local_connectivity, double tol, double min_k_dist_scale, bool ret_sigma, std::size_t n_threads, std::size_t grain_size);
-RcppExport SEXP _uwotlite_smooth_knn_distances_parallel(SEXP nn_distSEXP, SEXP nn_ptrSEXP, SEXP skip_firstSEXP, SEXP targetSEXP, SEXP n_iterSEXP, SEXP local_connectivitySEXP, SEXP tolSEXP, SEXP min_k_dist_scaleSEXP, SEXP ret_sigmaSEXP, SEXP n_threadsSEXP, SEXP grain_sizeSEXP) {
+RcppExport SEXP _uwotmit_smooth_knn_distances_parallel(SEXP nn_distSEXP, SEXP nn_ptrSEXP, SEXP skip_firstSEXP, SEXP targetSEXP, SEXP n_iterSEXP, SEXP local_connectivitySEXP, SEXP tolSEXP, SEXP min_k_dist_scaleSEXP, SEXP ret_sigmaSEXP, SEXP n_threadsSEXP, SEXP grain_sizeSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -114,7 +114,7 @@ END_RCPP
 }
 // reset_local_metrics_parallel
 List reset_local_metrics_parallel(IntegerVector indptr, NumericVector probabilities, std::size_t n_iter, double tol, double num_local_metric_neighbors, std::size_t n_threads);
-RcppExport SEXP _uwotlite_reset_local_metrics_parallel(SEXP indptrSEXP, SEXP probabilitiesSEXP, SEXP n_iterSEXP, SEXP tolSEXP, SEXP num_local_metric_neighborsSEXP, SEXP n_threadsSEXP) {
+RcppExport SEXP _uwotmit_reset_local_metrics_parallel(SEXP indptrSEXP, SEXP probabilitiesSEXP, SEXP n_iterSEXP, SEXP tolSEXP, SEXP num_local_metric_neighborsSEXP, SEXP n_threadsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -130,7 +130,7 @@ END_RCPP
 }
 // fast_intersection_cpp
 NumericVector fast_intersection_cpp(IntegerVector rows, IntegerVector cols, NumericVector values, IntegerVector target, double unknown_dist, double far_dist);
-RcppExport SEXP _uwotlite_fast_intersection_cpp(SEXP rowsSEXP, SEXP colsSEXP, SEXP valuesSEXP, SEXP targetSEXP, SEXP unknown_distSEXP, SEXP far_distSEXP) {
+RcppExport SEXP _uwotmit_fast_intersection_cpp(SEXP rowsSEXP, SEXP colsSEXP, SEXP valuesSEXP, SEXP targetSEXP, SEXP unknown_distSEXP, SEXP far_distSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -146,7 +146,7 @@ END_RCPP
 }
 // general_sset_intersection_cpp
 NumericVector general_sset_intersection_cpp(IntegerVector indptr1, IntegerVector indices1, NumericVector data1, IntegerVector indptr2, IntegerVector indices2, NumericVector data2, IntegerVector result_row, IntegerVector result_col, NumericVector result_val, double mix_weight);
-RcppExport SEXP _uwotlite_general_sset_intersection_cpp(SEXP indptr1SEXP, SEXP indices1SEXP, SEXP data1SEXP, SEXP indptr2SEXP, SEXP indices2SEXP, SEXP data2SEXP, SEXP result_rowSEXP, SEXP result_colSEXP, SEXP result_valSEXP, SEXP mix_weightSEXP) {
+RcppExport SEXP _uwotmit_general_sset_intersection_cpp(SEXP indptr1SEXP, SEXP indices1SEXP, SEXP data1SEXP, SEXP indptr2SEXP, SEXP indices2SEXP, SEXP data2SEXP, SEXP result_rowSEXP, SEXP result_colSEXP, SEXP result_valSEXP, SEXP mix_weightSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -166,7 +166,7 @@ END_RCPP
 }
 // general_sset_union_cpp
 NumericVector general_sset_union_cpp(IntegerVector indptr1, IntegerVector indices1, NumericVector data1, IntegerVector indptr2, IntegerVector indices2, NumericVector data2, IntegerVector result_row, IntegerVector result_col, NumericVector result_val);
-RcppExport SEXP _uwotlite_general_sset_union_cpp(SEXP indptr1SEXP, SEXP indices1SEXP, SEXP data1SEXP, SEXP indptr2SEXP, SEXP indices2SEXP, SEXP data2SEXP, SEXP result_rowSEXP, SEXP result_colSEXP, SEXP result_valSEXP) {
+RcppExport SEXP _uwotmit_general_sset_union_cpp(SEXP indptr1SEXP, SEXP indices1SEXP, SEXP data1SEXP, SEXP indptr2SEXP, SEXP indices2SEXP, SEXP data2SEXP, SEXP result_rowSEXP, SEXP result_colSEXP, SEXP result_valSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -185,7 +185,7 @@ END_RCPP
 }
 // hardware_concurrency
 unsigned int hardware_concurrency();
-RcppExport SEXP _uwotlite_hardware_concurrency() {
+RcppExport SEXP _uwotmit_hardware_concurrency() {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -195,7 +195,7 @@ END_RCPP
 }
 // init_transform_parallel
 NumericMatrix init_transform_parallel(NumericMatrix train_embedding, IntegerVector nn_index, std::size_t n_test_vertices, Nullable<NumericVector> nn_weights, std::size_t n_threads, std::size_t grain_size);
-RcppExport SEXP _uwotlite_init_transform_parallel(SEXP train_embeddingSEXP, SEXP nn_indexSEXP, SEXP n_test_verticesSEXP, SEXP nn_weightsSEXP, SEXP n_threadsSEXP, SEXP grain_sizeSEXP) {
+RcppExport SEXP _uwotmit_init_transform_parallel(SEXP train_embeddingSEXP, SEXP nn_indexSEXP, SEXP n_test_verticesSEXP, SEXP nn_weightsSEXP, SEXP n_threadsSEXP, SEXP grain_sizeSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -211,21 +211,21 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_uwotlite_connected_components_undirected", (DL_FUNC) &_uwotlite_connected_components_undirected, 5},
-    {"_uwotlite_annoy_search_parallel_cpp", (DL_FUNC) &_uwotlite_annoy_search_parallel_cpp, 7},
-    {"_uwotlite_calc_row_probabilities_parallel", (DL_FUNC) &_uwotlite_calc_row_probabilities_parallel, 8},
-    {"_uwotlite_optimize_layout_r", (DL_FUNC) &_uwotlite_optimize_layout_r, 21},
-    {"_uwotlite_smooth_knn_distances_parallel", (DL_FUNC) &_uwotlite_smooth_knn_distances_parallel, 11},
-    {"_uwotlite_reset_local_metrics_parallel", (DL_FUNC) &_uwotlite_reset_local_metrics_parallel, 6},
-    {"_uwotlite_fast_intersection_cpp", (DL_FUNC) &_uwotlite_fast_intersection_cpp, 6},
-    {"_uwotlite_general_sset_intersection_cpp", (DL_FUNC) &_uwotlite_general_sset_intersection_cpp, 10},
-    {"_uwotlite_general_sset_union_cpp", (DL_FUNC) &_uwotlite_general_sset_union_cpp, 9},
-    {"_uwotlite_hardware_concurrency", (DL_FUNC) &_uwotlite_hardware_concurrency, 0},
-    {"_uwotlite_init_transform_parallel", (DL_FUNC) &_uwotlite_init_transform_parallel, 6},
+    {"_uwotmit_connected_components_undirected", (DL_FUNC) &_uwotmit_connected_components_undirected, 5},
+    {"_uwotmit_annoy_search_parallel_cpp", (DL_FUNC) &_uwotmit_annoy_search_parallel_cpp, 7},
+    {"_uwotmit_calc_row_probabilities_parallel", (DL_FUNC) &_uwotmit_calc_row_probabilities_parallel, 8},
+    {"_uwotmit_optimize_layout_r", (DL_FUNC) &_uwotmit_optimize_layout_r, 21},
+    {"_uwotmit_smooth_knn_distances_parallel", (DL_FUNC) &_uwotmit_smooth_knn_distances_parallel, 11},
+    {"_uwotmit_reset_local_metrics_parallel", (DL_FUNC) &_uwotmit_reset_local_metrics_parallel, 6},
+    {"_uwotmit_fast_intersection_cpp", (DL_FUNC) &_uwotmit_fast_intersection_cpp, 6},
+    {"_uwotmit_general_sset_intersection_cpp", (DL_FUNC) &_uwotmit_general_sset_intersection_cpp, 10},
+    {"_uwotmit_general_sset_union_cpp", (DL_FUNC) &_uwotmit_general_sset_union_cpp, 9},
+    {"_uwotmit_hardware_concurrency", (DL_FUNC) &_uwotmit_hardware_concurrency, 0},
+    {"_uwotmit_init_transform_parallel", (DL_FUNC) &_uwotmit_init_transform_parallel, 6},
     {NULL, NULL, 0}
 };
 
-RcppExport void R_init_uwotlite(DllInfo *dll) {
+RcppExport void R_init_uwotmit(DllInfo *dll) {
     R_registerRoutines(dll, NULL, CallEntries, NULL, NULL);
     R_useDynamicSymbols(dll, FALSE);
 }

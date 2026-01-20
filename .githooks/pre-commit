@@ -1,11 +1,11 @@
 #!/bin/bash
-# Git pre-commit hook for uwotlite
+# Git pre-commit hook for uwotmit
 # Runs full test suite before allowing commit
 
 # Get the root directory of the git repository
 ROOT_DIR="$(git rev-parse --show-toplevel)"
 
-echo "Running pre-commit tests for uwotlite..."
+echo "Running pre-commit tests for uwotmit..."
 echo ""
 
 # Run the pre-commit test script

@@ -5075,10 +5075,11 @@ scale_radii <- function(localr, dens_scale, a) {
   sqrt(exp(log_denso_scale))
 }
 
-#' @useDynLib uwotlite, .registration=TRUE
+#' @useDynLib uwotmit, .registration=TRUE
 #' @importFrom Rcpp sourceCpp
+#' @importMethodsFrom Matrix t summary
 .onUnload <- function(libpath) {
-  library.dynam.unload("uwotlite", libpath)
+  library.dynam.unload("uwotmit", libpath)
 }
 
 # Remove scaling attributes from a matrix

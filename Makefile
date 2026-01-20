@@ -1,11 +1,11 @@
-# Makefile for uwotlite R package
+# Makefile for uwotmit R package
 # Provides test automation targets for TDD workflow
 
 .PHONY: test test-all test-comparison check lint precommit document install clean help
 
 # Default target
 help:
-	@echo "uwotlite Makefile targets:"
+	@echo "uwotmit Makefile targets:"
 	@echo "  make test            - Run unit tests only"
 	@echo "  make test-all        - Run lint + unit tests + comparison tests"
 	@echo "  make test-comparison - Run comparison tests against uwot package"

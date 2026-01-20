@@ -1,4 +1,4 @@
 library(testthat)
-library(uwotlite)
+library(uwotmit)
 
-test_check("uwotlite")
+test_check("uwotmit")

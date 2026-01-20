@@ -1,6 +1,6 @@
 # =============================================================================
-# Fork-Specific Regression Tests for uwotlite
-# These tests verify the critical differences between uwotlite and uwot
+# Fork-Specific Regression Tests for uwotmit
+# These tests verify the critical differences between uwotmit and uwot
 # to prevent regressions in fork-specific behavior.
 #
 # Key fork changes:
@@ -357,9 +357,9 @@ test_that("Supervised UMAP is reproducible with same seed", {
 # Section 10: Package Identity
 # =============================================================================
 
-test_that("Package is uwotlite, not uwot", {
+test_that("Package is uwotmit, not uwot", {
   expect_true(
-    "uwotlite" %in% loadedNamespaces() ||
-    requireNamespace("uwotlite", quietly = TRUE)
+    "uwotmit" %in% loadedNamespaces() ||
+    requireNamespace("uwotmit", quietly = TRUE)
   )
 })

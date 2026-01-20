@@ -15,7 +15,6 @@
 # it's incredibly wasteful to calculate all of them.
 # A must be symmetric and positive semi definite, but not necessarily
 # normalized in any specific way.
-#' @import Matrix
 laplacian_eigenmap <- function(A, ndim = 2, verbose = FALSE, force_irlba = FALSE) {
   if (rspectra_is_installed() && !force_irlba) {
     coords <- rspectra_laplacian_eigenmap(A, ndim, verbose = verbose)
@@ -35,7 +34,7 @@ rspectra_laplacian_eigenmap <- function(A, ndim = 2, verbose = FALSE) {
   # Equivalent to: D <- diag(colSums(A)); M <- solve(D) %*% A
   # This effectively row-normalizes A: colSums is normally faster than rowSums
   # and because A is symmetric, they're equivalent
-  M <- A / colSums(A)
+  M <- A / Matrix::colSums(A)
   res <- rspectra_eigs_asym(M, ndim)
   if (is.null(res) ||
     !is.list(res) ||

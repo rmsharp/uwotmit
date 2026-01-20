@@ -489,7 +489,7 @@ details). I will also save the nearest neighbors with `ret_nn = TRUE` so I can
 compare them with the exact results we will calculate later.
 
 ```{r umap on sparse}
-library(uwotlite)
+library(uwotmit)
 ng20_umap <-
   umap2(
     X = tfidf_sp,

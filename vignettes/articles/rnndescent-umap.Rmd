@@ -68,7 +68,7 @@ library(rnndescent)
 ## UMAP with nndescent
 
 ```{uwot setup}
-library(uwotlite)
+library(uwotmit)
 ```
 
 `uwot` can now use `rnndescent` for its nearest neighbor search if you  set 
@@ -529,17 +529,17 @@ If you want to use `rnndescent` with `uwot`, then:
 That handles most cases. If you want to use precomputed nearest neighbors, then:
 
 * Run `rnndescent::rnnd_build` on your training data.
-* Run `uwotlite::umap` with `nn_method` set to the `graph` item in the result of
+* Run `uwotmit::umap` with `nn_method` set to the `graph` item in the result of
   `rnnd_build` and remember to set `ret_model = TRUE`.
   
 To transform new data:
 
 * Run `rnndescent::rnnd_query` on your test data, using the result of
   `rnnd_build` as the `index` parameter.
-* Run `uwotlite::umap_transform` with `nn_method` set to the result of
+* Run `uwotmit::umap_transform` with `nn_method` set to the result of
   `rnnd_query`.
   
 If you don't want to transform new data, then it's even easier:
 
 * Run `rnndescent::rnnd_knn` on your training data.
-* Run `uwotlite::umap` with `nn_method` set to the result of `rnnd_knn`.
+* Run `uwotmit::umap` with `nn_method` set to the result of `rnnd_knn`.

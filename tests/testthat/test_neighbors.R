@@ -1,4 +1,4 @@
-library(uwotlite)
+library(uwotmit)
 library(RSpectra)
 context("neighbors")
 
@@ -45,9 +45,9 @@ expect_equal(res$idx[-6, ], i10nn4idx[-6, ])
 sparse_to_tri <- function(m, lower = TRUE) {
   sm <- summary(m)
   if (lower) {
-    subtri <- subset(sm, i >= j)
+    subtri <- sm[sm$i >= sm$j, ]
   } else {
-    subtri <- subset(sm, i <= j)
+    subtri <- sm[sm$i <= sm$j, ]
   }
 
   Matrix::sparseMatrix(i = subtri$i, j = subtri$j, x = subtri$x, dims = dim(m))

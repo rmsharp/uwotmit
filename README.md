@@ -1,22 +1,22 @@
-# uwotlite
+# uwotmit
 
 <!-- badges: start -->
-[![R-CMD-check](https://github.com/rmsharp/uwotlite/workflows/R-CMD-check/badge.svg)](https://github.com/rmsharp/uwotlite/actions)
+[![R-CMD-check](https://github.com/rmsharp/uwotmit/workflows/R-CMD-check/badge.svg)](https://github.com/rmsharp/uwotmit/actions)
 <!-- badges: end -->
 
 ## MIT-Compatible Fork of uwot
 
-`uwotlite` is an MIT-licensed fork of the [uwot](https://github.com/jlmelville/uwot) package. It provides the same UMAP (Uniform Manifold Approximation and Projection) dimensionality reduction functionality but with MIT-compatible dependencies.
+`uwotmit` is an MIT-licensed fork of the [uwot](https://github.com/jlmelville/uwot) package. It provides the same UMAP (Uniform Manifold Approximation and Projection) dimensionality reduction functionality but with MIT-compatible dependencies.
 
-### Why uwotlite?
+### Why uwotmit?
 
 The original `uwot` package depends on `dqrng` for its PCG random number generator, which is licensed under AGPL-3. This can create licensing complications for projects that need to maintain MIT or other permissive licensing throughout their dependency tree.
 
-`uwotlite` replaces the AGPL-licensed `dqrng` dependency with the MIT-licensed `sitmo` package, providing the same high-quality random number generation without the AGPL licensing requirement.
+`uwotmit` replaces the AGPL-licensed `dqrng` dependency with the MIT-licensed `sitmo` package, providing the same high-quality random number generation without the AGPL licensing requirement.
 
 ### Key Differences from uwot
 
-| Feature | uwot | uwotlite |
+| Feature | uwot | uwotmit |
 |---------|------|----------|
 | License | GPL (>= 3) | MIT |
 | RNG Library | dqrng (AGPL-3) | sitmo (MIT) |
@@ -28,13 +28,13 @@ The original `uwot` package depends on `dqrng` for its PCG random number generat
 
 ```R
 # install.packages("devtools")
-devtools::install_github("rmsharp/uwotlite")
+devtools::install_github("rmsharp/uwotmit")
 ```
 
 ## Example
 
 ```R
-library(uwotlite)
+library(uwotmit)
 
 # umap2 is a version of the umap() function with better defaults
 iris_umap <- umap2(iris)
@@ -52,7 +52,7 @@ plot(
   cex = 0.1,
   col = grDevices::rainbow(n = length(levels(mnist$Label)))[as.integer(mnist$Label)] |>
     grDevices::adjustcolor(alpha.f = 0.1),
-  main = "uwotlite::umap",
+  main = "uwotmit::umap",
   xlab = "",
   ylab = ""
 )
@@ -90,4 +90,4 @@ This package is a fork of [uwot](https://github.com/jlmelville/uwot) by James Me
 
 * The original [uwot package](https://github.com/jlmelville/uwot)
 * The [UMAP reference implementation](https://github.com/lmcinnes/umap) and [publication](https://arxiv.org/abs/1802.03426)
-* [embedmit](https://github.com/rmsharp/embedmit) - MIT-compatible fork of the embed package that uses uwotlite
+* [embedmit](https://github.com/rmsharp/embedmit) - MIT-compatible fork of the embed package that uses uwotmit

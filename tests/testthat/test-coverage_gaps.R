@@ -1,5 +1,5 @@
 # =============================================================================
-# Coverage Gap Tests for uwotlite
+# Coverage Gap Tests for uwotmit
 # Tests for previously untested or under-tested code paths
 # =============================================================================
 

@@ -1,9 +1,9 @@
 #!/bin/bash
-# Pre-commit hook for uwotlite - ensures TDD compliance
+# Pre-commit hook for uwotmit - ensures TDD compliance
 
 set -e
 
-echo "Running uwotlite pre-commit checks..."
+echo "Running uwotmit pre-commit checks..."
 
 # Change to project directory
 cd "$(dirname "$0")/../.."

@@ -20,3 +20,4 @@
 ^tests/testthat/test_comparison_uwot\.R$
 ^tests/testthat/helper_comparison\.R$
 ^\.claude$
+^\.githooks$

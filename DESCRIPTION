@@ -1,4 +1,4 @@
-Package: uwotlite
+Package: uwotmit
 Title: The Uniform Manifold Approximation and Projection (UMAP) Method for
     Dimensionality Reduction (MIT-Compatible Fork)
 Version: 0.2.4.9000
@@ -21,13 +21,13 @@ Description: MIT-compatible fork of the 'uwot' package. An implementation of
     the AGPL-licensed dqrng with MIT-licensed sitmo for the PCG random number
     generator.
 License: MIT + file LICENSE
-URL: https://github.com/rmsharp/uwotlite
-BugReports: https://github.com/rmsharp/uwotlite/issues
+URL: https://github.com/rmsharp/uwotmit
+BugReports: https://github.com/rmsharp/uwotmit/issues
 Depends:
-    R (>= 4.3),
-    Matrix
+    R (>= 4.3)
 Imports:
     FNN,
+    Matrix,
     irlba,
     methods,
     Rcpp,

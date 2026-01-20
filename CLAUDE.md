@@ -1,8 +1,8 @@
-# uwotlite - Claude Code Project Configuration
+# uwotmit - Claude Code Project Configuration
 
 ## Project Overview
 
-**uwotlite** is an MIT-licensed fork of the `uwot` package, providing UMAP (Uniform Manifold Approximation and Projection) dimensionality reduction for R.
+**uwotmit** is an MIT-licensed fork of the `uwot` package, providing UMAP (Uniform Manifold Approximation and Projection) dimensionality reduction for R.
 
 ---
 

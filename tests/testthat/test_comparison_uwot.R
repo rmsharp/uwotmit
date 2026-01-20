@@ -1,10 +1,10 @@
-# Comparison tests: uwotlite vs uwot
-# These tests verify that uwotlite produces equivalent or statistically similar
+# Comparison tests: uwotmit vs uwot
+# These tests verify that uwotmit produces equivalent or statistically similar
 # results to the original uwot package.
 
-library(uwotlite)
+library(uwotmit)
 
-context("uwotlite vs uwot comparison")
+context("uwotmit vs uwot comparison")
 
 # =============================================================================
 # Section 1: Basic UMAP Statistical Similarity
@@ -17,9 +17,9 @@ test_that("umap() produces statistically similar results to uwot", {
   test_data <- create_comparison_data(n = 100, p = 10, seed = 42)
   X <- test_data$X
 
-  # Run uwotlite
+  # Run uwotmit
   set.seed(123)
-  result_lite <- uwotlite::umap(
+  result_lite <- uwotmit::umap(
     X,
     n_neighbors = 15,
     n_components = 2,
@@ -45,17 +45,17 @@ test_that("umap() produces statistically similar results to uwot", {
   comparison <- compare_embeddings(
     result_lite, result_uwot, X,
     k = 10,
-    labels = c("uwotlite", "uwot")
+    labels = c("uwotmit", "uwot")
   )
 
   # Output comparison metrics for debugging
-  message(format_comparison_results(comparison, labels = c("uwotlite", "uwot")))
+  message(format_comparison_results(comparison, labels = c("uwotmit", "uwot")))
 
   # Both embeddings should have high trustworthiness
   expect_true(
     all(comparison$trustworthiness >= 0.80),
     info = sprintf(
-      "Trustworthiness too low: uwotlite=%.4f, uwot=%.4f",
+      "Trustworthiness too low: uwotmit=%.4f, uwot=%.4f",
       comparison$trustworthiness[1], comparison$trustworthiness[2]
     )
   )
@@ -85,7 +85,7 @@ test_that("tumap() produces statistically similar results to uwot", {
   X <- test_data$X
 
   set.seed(124)
-  result_lite <- uwotlite::tumap(
+  result_lite <- uwotmit::tumap(
     X,
     n_neighbors = 10,
     n_components = 2,
@@ -122,7 +122,7 @@ test_that("lvish() produces statistically similar results to uwot", {
   X <- test_data$X
 
   set.seed(125)
-  result_lite <- uwotlite::lvish(
+  result_lite <- uwotmit::lvish(
     X,
     n_neighbors = 10,
     n_components = 2,
@@ -166,9 +166,9 @@ test_that("umap_transform() produces similar transforms to uwot", {
   X_train <- X[train_idx, ]
   X_test <- X[test_idx, ]
 
-  # Train uwotlite model
+  # Train uwotmit model
   set.seed(126)
-  model_lite <- uwotlite::umap(
+  model_lite <- uwotmit::umap(
     X_train,
     n_neighbors = 15,
     n_components = 2,
@@ -194,7 +194,7 @@ test_that("umap_transform() produces similar transforms to uwot", {
 
   # Transform test data
   set.seed(127)
-  transform_lite <- uwotlite::umap_transform(X_test, model = model_lite)
+  transform_lite <- uwotmit::umap_transform(X_test, model = model_lite)
 
   set.seed(127)
   transform_uwot <- uwot::umap_transform(X_test, model = model_uwot)
@@ -229,9 +229,9 @@ test_that("save_uwot/load_uwot produce consistent results", {
   X <- test_data$X
   X_new <- test_data$X[1:10, ] + matrix(rnorm(60, sd = 0.1), ncol = 6)
 
-  # Create and save uwotlite model
+  # Create and save uwotmit model
   set.seed(128)
-  model_lite <- uwotlite::umap(
+  model_lite <- uwotmit::umap(
     X,
     n_neighbors = 10,
     n_components = 2,
@@ -242,23 +242,23 @@ test_that("save_uwot/load_uwot produce consistent results", {
   )
 
   temp_file_lite <- tempfile(fileext = ".uwot")
-  uwotlite::save_uwot(model_lite, file = temp_file_lite)
+  uwotmit::save_uwot(model_lite, file = temp_file_lite)
 
   # Load and transform
-  loaded_model_lite <- uwotlite::load_uwot(temp_file_lite)
+  loaded_model_lite <- uwotmit::load_uwot(temp_file_lite)
 
   set.seed(129)
-  transform_original <- uwotlite::umap_transform(X_new, model = model_lite)
+  transform_original <- uwotmit::umap_transform(X_new, model = model_lite)
 
   set.seed(129)
-  transform_loaded <- uwotlite::umap_transform(X_new, model = loaded_model_lite)
+  transform_loaded <- uwotmit::umap_transform(X_new, model = loaded_model_lite)
 
   # Transforms should be identical after save/load
   expect_equal(transform_original, transform_loaded, tolerance = 1e-10)
 
   # Cleanup
-  uwotlite::unload_uwot(model_lite)
-  uwotlite::unload_uwot(loaded_model_lite)
+  uwotmit::unload_uwot(model_lite)
+  uwotmit::unload_uwot(loaded_model_lite)
   unlink(temp_file_lite)
 })
 
@@ -266,7 +266,7 @@ test_that("save_uwot/load_uwot produce consistent results", {
 # Section 6: RNG Type Support
 # =============================================================================
 
-test_that("uwotlite supports same RNG types as uwot",
+test_that("uwotmit supports same RNG types as uwot",
   {
   skip_if_no_uwot()
   skip_on_cran()
@@ -277,11 +277,11 @@ test_that("uwotlite supports same RNG types as uwot",
   rng_types <- c("pcg", "tausworthe", "deterministic")
 
   for (rng_type in rng_types) {
-    # uwotlite should not error
+    # uwotmit should not error
     result <- tryCatch(
       {
         set.seed(130)
-        uwotlite::umap(
+        uwotmit::umap(
           X,
           n_neighbors = 10,
           n_components = 2,
@@ -295,7 +295,7 @@ test_that("uwotlite supports same RNG types as uwot",
     )
     expect_false(
       inherits(result, "error"),
-      info = sprintf("uwotlite failed with RNG type: %s - %s",
+      info = sprintf("uwotmit failed with RNG type: %s - %s",
                      rng_type, if (inherits(result, "error")) conditionMessage(result) else "")
     )
   }
@@ -310,7 +310,7 @@ test_that("deterministic RNG produces reproducible results", {
 
   # Run twice with same seed
   set.seed(131)
-  result1 <- uwotlite::umap(
+  result1 <- uwotmit::umap(
     X,
     n_neighbors = 10,
     n_components = 2,
@@ -320,7 +320,7 @@ test_that("deterministic RNG produces reproducible results", {
   )
 
   set.seed(131)
-  result2 <- uwotlite::umap(
+  result2 <- uwotmit::umap(
     X,
     n_neighbors = 10,
     n_components = 2,
@@ -336,7 +336,7 @@ test_that("deterministic RNG produces reproducible results", {
 # Section 7: Different Metrics
 # =============================================================================
 
-test_that("uwotlite and uwot produce similar results with euclidean metric", {
+test_that("uwotmit and uwot produce similar results with euclidean metric", {
   skip_if_no_uwot()
   skip_on_cran()
 
@@ -344,7 +344,7 @@ test_that("uwotlite and uwot produce similar results with euclidean metric", {
   X <- test_data$X
 
   set.seed(132)
-  result_lite <- uwotlite::umap(
+  result_lite <- uwotmit::umap(
     X,
     n_neighbors = 10,
     n_components = 2,
@@ -369,7 +369,7 @@ test_that("uwotlite and uwot produce similar results with euclidean metric", {
   expect_true(all(comparison$trustworthiness >= 0.75))
 })
 
-test_that("uwotlite and uwot produce similar results with cosine metric", {
+test_that("uwotmit and uwot produce similar results with cosine metric", {
   skip_if_no_uwot()
   skip_on_cran()
 
@@ -377,7 +377,7 @@ test_that("uwotlite and uwot produce similar results with cosine metric", {
   X <- test_data$X
 
   set.seed(133)
-  result_lite <- uwotlite::umap(
+  result_lite <- uwotmit::umap(
     X,
     n_neighbors = 10,
     n_components = 2,
@@ -402,7 +402,7 @@ test_that("uwotlite and uwot produce similar results with cosine metric", {
   expect_true(all(comparison$trustworthiness >= 0.70))
 })
 
-test_that("uwotlite and uwot produce similar results with manhattan metric", {
+test_that("uwotmit and uwot produce similar results with manhattan metric", {
   skip_if_no_uwot()
   skip_on_cran()
 
@@ -410,7 +410,7 @@ test_that("uwotlite and uwot produce similar results with manhattan metric", {
   X <- test_data$X
 
   set.seed(134)
-  result_lite <- uwotlite::umap(
+  result_lite <- uwotmit::umap(
     X,
     n_neighbors = 10,
     n_components = 2,
@@ -439,7 +439,7 @@ test_that("uwotlite and uwot produce similar results with manhattan metric", {
 # Section 8: Edge Cases
 # =============================================================================
 
-test_that("uwotlite handles small datasets like uwot", {
+test_that("uwotmit handles small datasets like uwot", {
   skip_if_no_uwot()
   skip_on_cran()
 
@@ -449,7 +449,7 @@ test_that("uwotlite handles small datasets like uwot", {
   # Both should work without error
   expect_no_error({
     set.seed(135)
-    uwotlite::umap(
+    uwotmit::umap(
       X_small,
       n_neighbors = 3,
       n_components = 2,
@@ -472,7 +472,7 @@ test_that("uwotlite handles small datasets like uwot", {
   })
 })
 
-test_that("uwotlite handles distance matrix input like uwot", {
+test_that("uwotmit handles distance matrix input like uwot", {
   skip_if_no_uwot()
   skip_on_cran()
 
@@ -481,7 +481,7 @@ test_that("uwotlite handles distance matrix input like uwot", {
   D <- stats::dist(X)
 
   set.seed(136)
-  result_lite <- uwotlite::umap(
+  result_lite <- uwotmit::umap(
     D,
     n_neighbors = 10,
     n_components = 2,
@@ -511,7 +511,7 @@ test_that("uwotlite handles distance matrix input like uwot", {
 # Section 9: Performance Benchmarks
 # =============================================================================
 
-test_that("uwotlite performance is comparable to uwot", {
+test_that("uwotmit performance is comparable to uwot", {
   skip_if_no_uwot()
   skip_on_cran()
   skip("Performance test - run manually")
@@ -519,10 +519,10 @@ test_that("uwotlite performance is comparable to uwot", {
   test_data <- create_comparison_data(n = 500, p = 20, seed = 53)
   X <- test_data$X
 
-  # Time uwotlite
+  # Time uwotmit
   time_lite <- system.time({
     set.seed(137)
-    uwotlite::umap(
+    uwotmit::umap(
       X,
       n_neighbors = 15,
       n_components = 2,
@@ -545,14 +545,14 @@ test_that("uwotlite performance is comparable to uwot", {
     )
   })["elapsed"]
 
-  message(sprintf("uwotlite: %.2fs, uwot: %.2fs, ratio: %.2f",
+  message(sprintf("uwotmit: %.2fs, uwot: %.2fs, ratio: %.2f",
                   time_lite, time_uwot, time_lite / time_uwot))
 
-  # uwotlite should be within 2x of uwot
+  # uwotmit should be within 2x of uwot
   expect_true(
     time_lite < time_uwot * 2,
     info = sprintf(
-      "uwotlite (%.2fs) is more than 2x slower than uwot (%.2fs)",
+      "uwotmit (%.2fs) is more than 2x slower than uwot (%.2fs)",
       time_lite, time_uwot
     )
   )
@@ -571,7 +571,7 @@ test_that("supervised umap produces similar results to uwot", {
   y <- test_data$labels
 
   set.seed(138)
-  result_lite <- uwotlite::umap(
+  result_lite <- uwotmit::umap(
     X,
     y = y,
     n_neighbors = 10,
@@ -602,7 +602,7 @@ test_that("supervised umap produces similar results to uwot", {
 # Section 11: Different Initialization Methods
 # =============================================================================
 
-test_that("uwotlite supports same init methods as uwot", {
+test_that("uwotmit supports same init methods as uwot", {
   skip_if_no_uwot()
   skip_on_cran()
 
@@ -612,11 +612,11 @@ test_that("uwotlite supports same init methods as uwot", {
   init_methods <- c("spectral", "normlaplacian", "random", "laplacian", "pca", "spca")
 
   for (init_method in init_methods) {
-    # uwotlite should not error
+    # uwotmit should not error
     result <- tryCatch(
       {
         set.seed(139)
-        uwotlite::umap(
+        uwotmit::umap(
           X,
           n_neighbors = 10,
           n_components = 2,
@@ -630,7 +630,7 @@ test_that("uwotlite supports same init methods as uwot", {
     )
     expect_false(
       inherits(result, "error"),
-      info = sprintf("uwotlite failed with init method: %s - %s",
+      info = sprintf("uwotmit failed with init method: %s - %s",
                      init_method, if (inherits(result, "error")) conditionMessage(result) else "")
     )
   }
@@ -640,7 +640,7 @@ test_that("uwotlite supports same init methods as uwot", {
 # Section 12: Return Options
 # =============================================================================
 
-test_that("uwotlite ret_nn returns similar structure to uwot", {
+test_that("uwotmit ret_nn returns similar structure to uwot", {
   skip_if_no_uwot()
   skip_on_cran()
 
@@ -648,7 +648,7 @@ test_that("uwotlite ret_nn returns similar structure to uwot", {
   X <- test_data$X
 
   set.seed(140)
-  result_lite <- uwotlite::umap(
+  result_lite <- uwotmit::umap(
     X,
     n_neighbors = 10,
     n_components = 2,

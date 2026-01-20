@@ -1,4 +1,4 @@
-library(uwotlite)
+library(uwotmit)
 context("optimization only")
 
 # this mainly exists to hedge against rhub timing out during tests and to still

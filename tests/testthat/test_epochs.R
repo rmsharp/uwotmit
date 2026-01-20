@@ -1,4 +1,4 @@
-library(uwotlite)
+library(uwotmit)
 context("Epochs")
 
 

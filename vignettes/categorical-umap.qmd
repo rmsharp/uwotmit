@@ -1,6 +1,6 @@
 ---
 title: "Dimensionality Reduction with UMAP"
-subtitle: "Complementing Categorical Encoding with uwotlite"
+subtitle: "Complementing Categorical Encoding with uwotmit"
 author: "Based on techniques from Tidy Modeling with R"
 format:
   html:
@@ -26,15 +26,15 @@ knitr::opts_chunk$set(
   warning = FALSE
 )
 
-# Check for required packages (including uwotlite itself for vignette building)
-required_pkgs <- c("uwotlite", "modeldata", "ggplot2", "dplyr", "scales")
+# Check for required packages (including uwotmit itself for vignette building)
+required_pkgs <- c("uwotmit", "modeldata", "ggplot2", "dplyr", "scales")
 have_pkgs <- vapply(required_pkgs, requireNamespace, logical(1), quietly = TRUE)
 if (!all(have_pkgs)) {
   knitr::opts_chunk$set(eval = FALSE)
 }
 ```
 
-This vignette demonstrates UMAP (Uniform Manifold Approximation and Projection) dimensionality reduction using `uwotlite`, as a complement to the categorical encoding techniques shown in [Chapter 17 of Tidy Modeling with R](https://www.tmwr.org/categorical).
+This vignette demonstrates UMAP (Uniform Manifold Approximation and Projection) dimensionality reduction using `uwotmit`, as a complement to the categorical encoding techniques shown in [Chapter 17 of Tidy Modeling with R](https://www.tmwr.org/categorical).
 
 ## Introduction
 
@@ -47,13 +47,13 @@ UMAP is a nonlinear dimensionality reduction technique that:
 - Can be used for visualization (2D) or feature creation (higher dimensions)
 - Supports supervised reduction using outcome information
 
-The `uwotlite` package provides an MIT-licensed UMAP implementation.
+The `uwotmit` package provides an MIT-licensed UMAP implementation.
 
 ## Setup
 
 ```{r}
 #| label: libraries
-library(uwotlite)
+library(uwotmit)
 library(dplyr)
 library(ggplot2)
 library(modeldata)
@@ -89,7 +89,7 @@ ames_numeric <- ames_train %>%
   # Scale the features
   mutate(across(everything(), scale))
 
-# Convert to matrix for uwotlite
+# Convert to matrix for uwotmit
 ames_matrix <- as.matrix(ames_numeric)
 
 dim(ames_matrix)
@@ -211,7 +211,7 @@ bind_rows(umap_results) %>%
 
 ## Transforming New Data
 
-A key feature of `uwotlite` is the ability to transform new data using a fitted UMAP model. This is essential for prediction workflows.
+A key feature of `uwotmit` is the ability to transform new data using a fitted UMAP model. This is essential for prediction workflows.
 
 ```{r}
 #| label: umap-transform
@@ -295,7 +295,7 @@ The R-squared tells us how much of the sale price variance is captured by just t
 
 ## Supervised UMAP
 
-`uwotlite` supports *supervised* UMAP, which uses label information to guide the embedding. This can improve the embedding for prediction tasks:
+`uwotmit` supports *supervised* UMAP, which uses label information to guide the embedding. This can improve the embedding for prediction tasks:
 
 ```{r}
 #| label: supervised-umap
@@ -366,7 +366,7 @@ UMAP is a powerful dimensionality reduction technique that complements categoric
 | Improve embeddings for prediction | Supervised UMAP with `y` parameter |
 | Apply to new data | `umap_transform()` with `ret_model = TRUE` |
 
-The `uwotlite` package provides an MIT-licensed UMAP implementation that integrates seamlessly with `embedmit` for complete feature engineering workflows.
+The `uwotmit` package provides an MIT-licensed UMAP implementation that integrates seamlessly with `embedmit` for complete feature engineering workflows.
 
 ## References
 

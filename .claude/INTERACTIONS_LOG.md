@@ -79,8 +79,8 @@ Created Claude Code configuration for TDD compliance:
 | All tests pass | ✅ |
 
 ### Related Work
-- uwotlite comparison test suite also created (see uwotlite/.claude/INTERACTIONS_LOG.md)
-- 40 tests passed for uwotlite vs uwot comparison
+- uwotmit comparison test suite also created (see uwotmit/.claude/INTERACTIONS_LOG.md)
+- 40 tests passed for uwotmit vs uwot comparison
 
 ---
 
@@ -144,7 +144,7 @@ make install         # Install package locally
 ## 2026-01-18: Comprehensive Coverage Gap Tests
 
 ### Summary
-Analyzed both embedmit and uwotlite for test coverage gaps and implemented comprehensive tests for high and medium priority gaps.
+Analyzed both embedmit and uwotmit for test coverage gaps and implemented comprehensive tests for high and medium priority gaps.
 
 ### Work Completed
 
@@ -158,7 +158,7 @@ Identified untested code paths in both packages:
 - Print methods for untrained steps
 - required_pkgs methods
 
-**uwotlite gaps:**
+**uwotmit gaps:**
 - Seed edge cases (0, negative, boundary values)
 - Invalid rng_type handling
 - Parameter validation
@@ -168,11 +168,11 @@ Identified untested code paths in both packages:
 #### 2. Test Implementation
 
 **embedmit:** Created `tests/testthat/test-coverage_gaps.R` with 59 tests
-**uwotlite:** Created `tests/testthat/test-coverage_gaps.R` with 94 tests
+**uwotmit:** Created `tests/testthat/test-coverage_gaps.R` with 94 tests
 
 ### Test Results After Implementation
 - **embedmit:** 833 passed, 0 failed, 10 warnings, 4 skips
-- **uwotlite:** 1140 passed, 0 failed, 0 warnings, 1 skip
+- **uwotmit:** 1140 passed, 0 failed, 0 warnings, 1 skip
 
 ---
 
@@ -185,7 +185,7 @@ Fixed 10 failing UMAP tests in embedmit caused by RNG type mismatch and backward
 
 #### Issue 1: RNG Type Mismatch
 The test-umap.R comparison tests were failing because:
-- Direct `uwotlite::umap()` calls used default `pcg_rand = TRUE` → "pcg" RNG
+- Direct `uwotmit::umap()` calls used default `pcg_rand = TRUE` → "pcg" RNG
 - `step_umap` uses `options = list(rng_type = "tausworthe")` → "tausworthe" RNG
 - Different RNG types produce different random sequences, causing embedding mismatches
 
@@ -210,9 +210,9 @@ if (is.null(x$target_weight)) {
 rlang::arg_match0(x$initial, initial_umap_values, arg_nm = "initial")
 ```
 
-2. **tests/testthat/test-umap.R** - Added `rng_type = "tausworthe"` to all direct uwotlite::umap calls:
+2. **tests/testthat/test-umap.R** - Added `rng_type = "tausworthe"` to all direct uwotmit::umap calls:
 ```r
-uwotlite::umap(
+uwotmit::umap(
   X = tr[, 1:4],
   ...
   rng_type = "tausworthe"  # Match step_umap's default
@@ -238,7 +238,7 @@ uwotlite::umap(
 | Package | Passed | Failed | Warnings | Skipped |
 |---------|--------|--------|----------|---------|
 | embedmit | 833 | 0 | 10 | 4 |
-| uwotlite | 1140 | 0 | 0 | 1 |
+| uwotmit | 1140 | 0 | 0 | 1 |
 
 ### Commit
 ```
@@ -279,7 +279,7 @@ Updated the categorical encoding vignette to match Chapter 17 of "Tidy Modeling 
 ## 2026-01-19: Code Coverage Analysis
 
 ### Summary
-Ran covr code coverage analysis on all 4 packages (embed, embedmit, uwot, uwotlite) to identify areas for improvement.
+Ran covr code coverage analysis on all 4 packages (embed, embedmit, uwot, uwotmit) to identify areas for improvement.
 
 ### Coverage Results
 
@@ -288,7 +288,7 @@ Ran covr code coverage analysis on all 4 packages (embed, embedmit, uwot, uwotli
 | embed    | 72.99%   | 688   |
 | embedmit | ~73%*    | 833   |
 | uwot     | 83.23%   | 963   |
-| uwotlite | 85.33%   | 1140  |
+| uwotmit | 85.33%   | 1140  |
 
 *embedmit coverage estimated; test environment issues prevented exact measurement.
 
@@ -303,12 +303,12 @@ Ran covr code coverage analysis on all 4 packages (embed, embedmit, uwot, uwotli
 | R/umap.R | 68.13% | Various UMAP options |
 | R/pca_truncated.R | 71.01% | Edge cases |
 
-**uwot/uwotlite:**
+**uwot/uwotmit:**
 
 | File | Coverage | Issue |
 |------|----------|-------|
 | R/bigstatsr_init.R | 0.00% | Entire file untested |
-| R/umap2.R | 0%/76% | uwot untested, uwotlite improved |
+| R/umap2.R | 0%/76% | uwot untested, uwotmit improved |
 | R/rspectra_init.R | 49.23% | Spectral initialization |
 | R/supervised.R | 59.77% | Supervised UMAP |
 | R/init.R | 60.32% | Initialization methods |
@@ -324,8 +324,8 @@ Ran covr code coverage analysis on all 4 packages (embed, embedmit, uwot, uwotli
 ### Fork Improvements
 
 The forks show improved coverage over originals:
-- uwotlite R/umap2.R: 0% → 76.09% (+76 percentage points)
-- Overall uwotlite: 83.23% → 85.33% (+2.1 percentage points)
+- uwotmit R/umap2.R: 0% → 76.09% (+76 percentage points)
+- Overall uwotmit: 83.23% → 85.33% (+2.1 percentage points)
 
 ---
 
@@ -336,7 +336,7 @@ The forks show improved coverage over originals:
 ```
 embedmit/
 ├── R/                              # 22 source files
-│   ├── umap.R                      # Modified: uwotlite + tausworthe default
+│   ├── umap.R                      # Modified: uwotmit + tausworthe default
 │   ├── lencode.R                   # Base likelihood encoding
 │   ├── lencode_glm.R               # GLM-based encoding
 │   ├── lencode_bayes.R             # Bayesian encoding
@@ -375,17 +375,17 @@ embedmit/
 ├── .claude/                        # Claude Code configuration
 │   ├── INTERACTIONS_LOG.md         # This file
 │   └── commands/                   # Custom slash commands
-├── DESCRIPTION                     # Package metadata (uwotlite in Imports)
+├── DESCRIPTION                     # Package metadata (uwotmit in Imports)
 ├── NAMESPACE                       # Exports and imports
 ├── Makefile                        # Build and test automation
 ├── CLAUDE.md                       # Claude Code project config
 └── README.md                       # Package documentation
 ```
 
-### uwotlite Final Structure
+### uwotmit Final Structure
 
 ```
-uwotlite/
+uwotmit/
 ├── R/                              # 13 source files
 │   ├── uwot.R                      # Main UMAP functions
 │   ├── umap2.R                     # Alternative UMAP interface
@@ -408,11 +408,11 @@ uwotlite/
 
 ### Key Differences from Original Packages
 
-| Aspect | embed → embedmit | uwot → uwotlite |
+| Aspect | embed → embedmit | uwot → uwotmit |
 |--------|------------------|-----------------|
 | License | MIT (unchanged) | GPL-3 → MIT |
 | RNG default | pcg → tausworthe | pcg → sitmo |
-| UMAP dependency | uwot → uwotlite | N/A |
+| UMAP dependency | uwot → uwotmit | N/A |
 | AGPL dependency | dqrng (removed) | dqrng → sitmo |
 | Test count | ~400 → 833 | ~800 → 1140 |
 
@@ -468,10 +468,10 @@ When renaming test files, ensure the old file is completely removed from the ins
 ## 2026-01-19: Lintr Compliance (embedmit only)
 
 ### Summary
-embedmit achieved full lintr compliance. uwotlite was reviewed but not modified because its lintr warnings are inherited mathematical conventions from uwot.
+embedmit achieved full lintr compliance. uwotmit was reviewed but not modified because its lintr warnings are inherited mathematical conventions from uwot.
 
-### uwotlite Lintr Status
-uwotlite has lintr warnings for:
+### uwotmit Lintr Status
+uwotmit has lintr warnings for:
 - Parameter names like `X`, `A`, `P`, `M` (mathematical conventions from UMAP literature)
 - Some line length issues in affinity.R, init.R
 - Commented code in init.R (preserved from original uwot)
@@ -483,3 +483,173 @@ These patterns are intentional and match the original uwot package for consisten
 
 ### Related
 See embedmit INTERACTIONS_LOG.md for the full lintr compliance work done there.
+
+---
+
+## 2026-01-19: Package Rename (uwotlite → uwotmit)
+
+### Summary
+Renamed package from "uwotlite" to "uwotmit" for better clarity.
+
+### Rationale
+- "uwotmit" better reflects the package purpose (uwot + MIT licensing)
+- "lite" could suggest reduced functionality (which is not the case)
+- Maintains naming symmetry with "embedmit"
+
+### Changes Made
+
+All internal references updated:
+
+| File Category | Files Modified |
+|---------------|----------------|
+| Package metadata | DESCRIPTION (Package: uwotmit) |
+| R source files | All R/*.R files |
+| Test infrastructure | tests/testthat.R, all tests/testthat/*.R |
+| Vignettes | vignettes/*.qmd, vignettes/*.Rmd |
+| Documentation | README.md, CLAUDE.md, man/*.Rd |
+| Claude config | .claude/INTERACTIONS_LOG.md, .claude/commands/*.md |
+| Build files | pkgdown/_pkgdown.yml, Makefile, scripts/*.sh |
+| Git config | .gitignore (uwotlite.Rcheck/ → uwotmit.Rcheck/) |
+| Hooks | .claude/hooks/pre-commit.sh |
+
+### Test Results After Rename
+```
+Test passed 🥳
+FAIL 0 | WARN 0 | SKIP 1 | PASS 1140
+```
+
+### Downstream Impact
+Updated embedmit package to reference uwotmit:
+- DESCRIPTION Imports
+- NAMESPACE importFrom statements
+- All R/*.R source files
+- All test files
+- README.md documentation
+
+### Pending Manual Steps
+1. Rename GitHub repository from uwotlite to uwotmit
+2. Update git remote URLs after rename
+
+---
+
+## 2026-01-19: CRAN Readiness Assessment and Package Improvements
+
+### Summary
+Performed comprehensive CRAN readiness assessment for both packages, ran code quality tools (lintr, goodpractice, covr), and made improvements to address goodpractice recommendations.
+
+### CRAN Readiness Check Results
+
+#### uwotmit: 4 NOTEs → 3 NOTEs (after improvements)
+
+| Issue | Status |
+|-------|--------|
+| New submission | Expected NOTE |
+| Version 0.2.4.9000 | Change to 0.2.5 before submission |
+| GitHub URLs return 404 | Create repository |
+| `.githooks` directory | Fixed (added to .Rbuildignore) |
+| Non-standard top-level files | Noted |
+| `Depends: Matrix` | Fixed (moved to Imports) |
+
+#### embedmit: 1 WARNING, 4 NOTEs
+
+| Issue | Status |
+|-------|--------|
+| `Remotes` field + uwotmit not on CRAN | **Blocking** - uwotmit must be on CRAN first |
+| Long file paths in presentation | Fixed (added to .Rbuildignore) |
+| Hidden files (.lintr, .githooks) | Fixed (added to .Rbuildignore) |
+
+### Code Quality Tool Results
+
+#### Coverage (covr)
+
+| Package | Coverage |
+|---------|----------|
+| uwotmit | 83.04% |
+| embedmit | 75.27% |
+
+#### Lintr
+
+| Package | Result |
+|---------|--------|
+| uwotmit | Style issues (inherited from uwot, intentional) |
+| embedmit | ✅ No lints found |
+
+#### Goodpractice
+
+**uwotmit issues addressed:**
+- ✅ `Depends: Matrix` → moved to `Imports`
+- High cyclomatic complexity (inherited, architectural)
+- Long lines (style, low priority)
+- `setwd()` usage (inherited)
+- `sapply()` usage (low priority)
+
+**embedmit issues:**
+- 75% coverage (acceptable)
+- Uses `Depends` for recipes (required for tidymodels integration)
+
+### Changes Made
+
+#### uwotmit
+
+1. **DESCRIPTION**: Moved `Matrix` from `Depends` to `Imports`
+   ```
+   Depends: R (>= 4.3)
+   Imports: FNN, Matrix, irlba, methods, Rcpp, ...
+   ```
+
+2. **R/affinity.R**: Removed `#' @import Matrix`
+
+3. **R/init.R**:
+   - Removed `#' @import Matrix`
+   - Changed `colSums(A)` to `Matrix::colSums(A)` on line 37
+
+4. **R/uwot.R**: Added S4 method imports
+   ```r
+   #' @importMethodsFrom Matrix t summary
+   ```
+
+5. **tests/testthat/test_neighbors.R**: Fixed `sparse_to_tri()` helper
+   - Replaced `subset(sm, i >= j)` with `sm[sm$i >= sm$j, ]`
+   - Avoids non-standard evaluation issues
+
+6. **.Rbuildignore**: Added `^\.githooks$`
+
+7. **NAMESPACE** (regenerated):
+   - Removed `import(Matrix)`
+   - Added `importMethodsFrom(Matrix,t,summary)`
+
+#### embedmit
+
+1. **.Rbuildignore**: Added:
+   - `^\.githooks$`
+   - `^\.lintr$`
+   - `^inst/extdata/presentation$`
+
+### Test Results After Changes
+
+**uwotmit:**
+```
+R CMD check: Status: 3 NOTEs
+Tests: FAIL 0 | WARN 0 | SKIP 1 | PASS 1140
+```
+
+**embedmit:** No changes to code, only .Rbuildignore updates.
+
+### CRAN Submission Order
+
+1. **First**: Submit uwotmit to CRAN
+2. **Then**: Remove `Remotes` field from embedmit DESCRIPTION
+3. **Then**: Submit embedmit to CRAN
+
+### Remaining Pre-Submission Tasks
+
+**uwotmit:**
+- [ ] Create GitHub repository at github.com/rmsharp/uwotmit
+- [ ] Change version from 0.2.4.9000 to 0.2.5
+- [ ] Add remaining items to .Rbuildignore: `^CLAUDE\.md$`, `^Makefile$`, `^scripts$`, `^uwotlite.*\.tar\.gz$`
+
+**embedmit:**
+- [ ] Wait for uwotmit CRAN acceptance
+- [ ] Remove `Remotes: rmsharp/uwotmit` from DESCRIPTION
+- [ ] Change version from 1.2.1.9000 to 1.2.2
+- [ ] Add remaining items to .Rbuildignore: `^CLAUDE\.md$`, `^Makefile$`, `^scripts$`

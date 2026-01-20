@@ -7,7 +7,7 @@ docs
 inst/doc
 
 /.quarto/
-uwotlite.Rcheck/
+uwotmit.Rcheck/
 *.Rcheck/
 ..Rcheck/
 *.tar.gz

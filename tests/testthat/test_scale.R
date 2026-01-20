@@ -1,4 +1,4 @@
-library(uwotlite)
+library(uwotmit)
 context("Scaling")
 
 iris10_sd <- apply(iris10, 2, sd)
