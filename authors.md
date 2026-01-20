@@ -25,13 +25,12 @@ Source:
 
 Melville J (2026). *uwotmit: The Uniform Manifold Approximation and
 Projection (UMAP) Method for Dimensionality Reduction (MIT-Compatible
-Fork)*. R package version 0.2.4.9000,
-<https://github.com/rmsharp/uwotmit>.
+Fork)*. R package version 1.0.0, <https://github.com/rmsharp/uwotmit>.
 
     @Manual{,
       title = {uwotmit: The Uniform Manifold Approximation and Projection (UMAP) Method for Dimensionality Reduction (MIT-Compatible Fork)},
       author = {James Melville},
       year = {2026},
-      note = {R package version 0.2.4.9000},
+      note = {R package version 1.0.0},
       url = {https://github.com/rmsharp/uwotmit},
     }
