@@ -177,7 +177,7 @@ colMaxs <- function(X) {
   ptr <- X@p
   xs <- X@x
   vapply(
-    1:ncol(X),
+    seq_len(ncol(X)),
     function(i) {
       if (ptr[i + 1] > ptr[i]) {
         max(xs[(ptr[i] + 1):ptr[i + 1]])

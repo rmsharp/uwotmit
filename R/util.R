@@ -218,7 +218,7 @@ nn_graph_row_names_list <- function(graph_list) {
     graph_list <- list(graph_list)
   }
   xnames <- NULL
-  for (i in 1:length(graph_list)) {
+  for (i in seq_along(graph_list)) {
     graph <- graph_list[[i]]
     if (is.list(graph)) {
       xnames <- nn_graph_row_names(graph)

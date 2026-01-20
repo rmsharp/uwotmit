@@ -691,3 +691,23 @@ The second change required rewriting because sapply's `simplify` argument has no
 
 ### Test Results
 All 1140 tests pass.
+
+---
+
+## 2026-01-19: Replace 1:length() with seq_along()/seq_len()
+
+### Summary
+Addressed goodpractice recommendation to avoid `1:length()`, `1:nrow()`, `1:ncol()` patterns which are error-prone (return `c(1, 0)` when input is empty).
+
+### Changes Made
+
+| File | Line | Before | After |
+|------|------|--------|-------|
+| R/util.R | 221 | `1:length(graph_list)` | `seq_along(graph_list)` |
+| R/neighbors.R | 179 | `1:nrow(X)` | `seq_len(nrow(X))` |
+| R/uwot.R | 4354 | `1:length(model$nn_index)` | `seq_along(model$nn_index)` |
+| R/uwot.R | 4872 | `1:ncol(X)` | `seq_len(ncol(X))` |
+| R/supervised.R | 180 | `1:ncol(X)` | `seq_len(ncol(X))` |
+
+### Test Results
+All 1140 tests pass.

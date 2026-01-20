@@ -176,7 +176,7 @@ annoy_nn <- function(X, k = 10,
     grain_size = grain_size, verbose = verbose
   )
 
-  nn_acc <- sum(res$idx == 1:nrow(X)) / nrow(X)
+  nn_acc <- sum(res$idx == seq_len(nrow(X))) / nrow(X)
   tsmessage("Annoy recall = ", formatC(nn_acc * 100.0), "%")
 
   res <- list(idx = res$idx, dist = res$dist, recall = nn_acc)

@@ -4351,7 +4351,7 @@ all_nn_indices_are_loaded <- function(model) {
   }
   if (is.list(model$nn_index)) {
     if (is.null(model$nn_index$type)) {
-      for (i in 1:length(model$nn_index)) {
+      for (i in seq_along(model$nn_index)) {
         rcppannoy <- get_rcppannoy(model$nn_index[[i]])
         if (rcppannoy$getNTrees() == 0) {
           return(FALSE)
@@ -4869,7 +4869,7 @@ categorical_intersection_df <- function(X, V, weight = 0.5, verbose = FALSE) {
     "Carrying out categorical intersection for ",
     pluralize("column", ncol(X))
   )
-  for (i in 1:ncol(X)) {
+  for (i in seq_len(ncol(X))) {
     V <- categorical_intersection(X[, i], V,
       weight = weight,
       verbose = (verbose && i == 1)
