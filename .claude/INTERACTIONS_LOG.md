@@ -653,3 +653,41 @@ Tests: FAIL 0 | WARN 0 | SKIP 1 | PASS 1140
 - [ ] Remove `Remotes: rmsharp/uwotmit` from DESCRIPTION
 - [ ] Change version from 1.2.1.9000 to 1.2.2
 - [ ] Add remaining items to .Rbuildignore: `^CLAUDE\.md$`, `^Makefile$`, `^scripts$`
+
+---
+
+## 2026-01-19: Replace sapply() with vapply()/lapply()
+
+### Summary
+Addressed goodpractice recommendation to avoid sapply() which is not type-safe.
+
+### Changes Made
+
+1. **R/util.R:253** - `nn_graph_nbrs_list()` function
+   ```r
+   # Before
+   sapply(graph_list, nn_graph_nbrs)
+   # After
+   vapply(graph_list, nn_graph_nbrs, numeric(1))
+   ```
+
+2. **R/uwot.R:3350** - Categorical column conversion
+   ```r
+   # Before
+   X[, cat_ids] <- sapply(X[, cat_ids, drop = FALSE], factor,
+     simplify = methods::is(X, "matrix")
+   )
+
+   # After
+   cat_factors <- lapply(X[, cat_ids, drop = FALSE], factor)
+   if (methods::is(X, "matrix")) {
+     X[, cat_ids] <- do.call(cbind, cat_factors)
+   } else {
+     X[, cat_ids] <- cat_factors
+   }
+   ```
+
+The second change required rewriting because sapply's `simplify` argument has no vapply equivalent. The new code is more explicit about the different handling for matrices vs data frames.
+
+### Test Results
+All 1140 tests pass.

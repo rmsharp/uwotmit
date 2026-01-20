@@ -250,7 +250,7 @@ nn_graph_nbrs_list <- function(graph_list) {
   if (nn_is_single(graph_list)) {
     graph_list <- list(graph_list)
   }
-  sapply(graph_list, nn_graph_nbrs)
+  vapply(graph_list, nn_graph_nbrs, numeric(1))
 }
 
 # from a nn graph (or list) get the number of neighbors

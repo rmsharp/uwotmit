@@ -3347,9 +3347,12 @@ uwot <- function(X, n_neighbors = 15, n_components = 2, metric = "euclidean",
       cat_ids <- cat_res$categoricals
       # Convert categorical columns to factors if they aren't already
       if (!is.null(cat_ids)) {
-        X[, cat_ids] <- sapply(X[, cat_ids, drop = FALSE], factor,
-          simplify = methods::is(X, "matrix")
-        )
+        cat_factors <- lapply(X[, cat_ids, drop = FALSE], factor)
+        if (methods::is(X, "matrix")) {
+          X[, cat_ids] <- do.call(cbind, cat_factors)
+        } else {
+          X[, cat_ids] <- cat_factors
+        }
         Xcat <- X[, cat_ids, drop = FALSE]
       }
 
